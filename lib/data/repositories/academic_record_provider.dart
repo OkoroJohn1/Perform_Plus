@@ -29,6 +29,12 @@ class AcademicRecordController extends StateNotifier<AcademicRecord> {
   final AcademicRecordRepository? _repository;
   final GradingSchemeRepository? _schemeRepository;
 
+  /// Completes once startup persistence/reload work is done. The reactive
+  /// `state` is what production code should use — this exists so tests can
+  /// await a cold start (persist-then-reload) before asserting on state,
+  /// instead of guessing at a delay.
+  late final Future<void> ready;
+
   AcademicRecordController(
     Ref ref,
     AcademicRecordRepository repository,
@@ -37,22 +43,45 @@ class AcademicRecordController extends StateNotifier<AcademicRecord> {
         _schemeRepository = schemeRepository,
         super(_seedFrom(ref.read(onboardingDraftProvider))) {
     ref.listen(onboardingDraftProvider, (previous, next) {
-      // The draft's committed semester only ever appears once, right after
-      // the Add Results screen commits it. Re-seeding on every draft change
-      // would clobber Results CRUD done afterwards, so only fold it in the
-      // first time.
-      if (previous?.committed == null && next.committed != null) {
-        addSemester(next.committed!);
+      // Fires for the *first* commit only if this controller already
+      // existed when it happened — see `_init` below for the far more
+      // common case where Add Results commits before anything has ever
+      // watched `academicRecordProvider`. The id comparison (rather than a
+      // null check) also catches a second/third semester committed via
+      // "Add another semester first", which a null check would miss since
+      // `committed` is never reset to null between commits.
+      final committed = next.committed;
+      if (committed != null && committed.id != previous?.committed?.id) {
+        addSemester(committed);
       }
     });
-    unawaited(_loadPersisted());
+    ready = _init(ref.read(onboardingDraftProvider).committed);
   }
 
   /// Fixed-state constructor for widget tests — bypasses the onboarding
   /// draft and Drift entirely so a test can hand it an exact [AcademicRecord].
   AcademicRecordController.seeded(super.record)
       : _repository = null,
-        _schemeRepository = null;
+        _schemeRepository = null {
+    ready = Future.value();
+  }
+
+  /// `_seedFrom` (in the initializer list above) already folds a
+  /// pre-existing committed draft into the initial in-memory state, but it
+  /// never reaches the database that way. In practice the onboarding draft
+  /// is *always* already committed by the time this controller is first
+  /// created — Add Results commits it, then GPA reveal, Sign In and Profile
+  /// Setup all run without ever watching `academicRecordProvider`; Backfill
+  /// is the first screen that does. Because `ref.listen` above only fires on
+  /// a transition *after* it's registered, that first semester would
+  /// otherwise sit in memory only and vanish on the next launch. Persisting
+  /// it here — before `_loadPersisted` runs — closes that gap.
+  Future<void> _init(Semester? alreadyCommittedBeforeInit) async {
+    if (alreadyCommittedBeforeInit != null) {
+      await _persist(alreadyCommittedBeforeInit);
+    }
+    await _loadPersisted();
+  }
 
   static AcademicRecord _seedFrom(OnboardingDraft draft) {
     final committed = draft.committed;

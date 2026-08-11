@@ -249,5 +249,32 @@ void main() {
       final row = await db.profileDao.getProfile('local-profile');
       expect(row?.activeSchemeId, 'futo_v1');
     });
+
+    test('saving a scheme after a profile exists does not clobber the profile', () async {
+      final schemeRepo = DriftGradingSchemeRepository(db.gradingSchemeDao, db.profileDao);
+      final profileRepo = DriftProfileRepository(db.profileDao);
+
+      await profileRepo.saveProfile(const StudentProfile(
+        fullName: 'Ada Obi',
+        regNumber: '21/ENG/12345',
+        department: 'Computer Science',
+        currentLevel: 300,
+        entryYear: 2021,
+        expectedGraduationYear: 2026,
+      ));
+
+      // Every semester saved through AcademicRecordController re-saves the
+      // active scheme alongside it (see academic_record_provider.dart's
+      // `_persist`) — this must not blank the profile out again.
+      await schemeRepo.saveActiveScheme(_scheme());
+
+      final profile = await profileRepo.loadProfile();
+      expect(profile?.fullName, 'Ada Obi');
+      expect(profile?.regNumber, '21/ENG/12345');
+      expect(profile?.entryYear, 2021);
+
+      final scheme = await schemeRepo.loadActiveScheme();
+      expect(scheme?.id, 'futo_v1');
+    });
   });
 }

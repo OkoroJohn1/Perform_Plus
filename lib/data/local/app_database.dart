@@ -4,15 +4,14 @@
 /// a Supabase mirror is added.
 library;
 
-import 'dart:io';
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 import '../../domain/models/course_result.dart';
 import '../../domain/models/grading_scheme.dart';
+import 'connection/connection_unsupported.dart'
+    if (dart.library.io) 'connection/connection_native.dart'
+    if (dart.library.js_interop) 'connection/connection_web.dart'
+    as platform;
 import 'converters/classification_band_list_converter.dart';
 import 'converters/grade_definition_list_converter.dart';
 import 'daos/course_result_dao.dart';
@@ -33,7 +32,7 @@ part 'app_database.g.dart';
   daos: [ProfileDao, SemesterDao, CourseResultDao, GradingSchemeDao, GoalDao],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase() : super(platform.connect());
 
   /// For tests: pass `NativeDatabase.memory()` (or any `QueryExecutor`) so
   /// nothing touches the real filesystem/platform channels.
@@ -45,12 +44,4 @@ class AppDatabase extends _$AppDatabase {
   @override
   MigrationStrategy get migration =>
       MigrationStrategy(onCreate: (Migrator m) => m.createAll());
-}
-
-QueryExecutor _openConnection() {
-  return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'perform_plus.sqlite'));
-    return NativeDatabase.createInBackground(file);
-  });
 }

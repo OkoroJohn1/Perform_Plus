@@ -47,8 +47,20 @@ class DriftGradingSchemeRepository implements GradingSchemeRepository {
       ),
     );
 
-    // Upsert a minimal profile row if none exists yet — scheme selection
-    // during onboarding can happen before the profile-setup screen runs.
+    final existing = await _profileDao.getProfile(AppConstants.localProfileId);
+    if (existing != null) {
+      // A real profile already exists (Profile Setup has run) — touch only
+      // the pointer column. `upsertProfile` below is a full-row upsert via
+      // `ProfilesCompanion.insert`, and its required (non-nullable) fields
+      // can't be left absent, so using it here would silently blank out the
+      // student's name/reg number/etc. on every semester saved afterwards.
+      await _profileDao.setActiveScheme(AppConstants.localProfileId, scheme.id);
+      return;
+    }
+
+    // No profile row yet — scheme selection during onboarding happens
+    // before the profile-setup screen runs. Insert a minimal placeholder so
+    // the active-scheme pointer has somewhere to live.
     await _profileDao.upsertProfile(
       ProfilesCompanion.insert(
         id: AppConstants.localProfileId,
