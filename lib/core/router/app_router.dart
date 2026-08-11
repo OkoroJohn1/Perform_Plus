@@ -44,12 +44,30 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Act 1 is deliberately open. No redirect logic applies here.
       if (Routes.isPreAuth(loc)) return null;
 
-      final signedIn = auth.valueOrNull?.isSignedIn ?? false;
+      // authStateProvider is AsyncLoading for at least one microtask on
+      // every fresh boot/reload (AsyncNotifier.build() is async, even
+      // though it resolves near-instantly here). `auth.valueOrNull` is
+      // null during that window — indistinguishable from "signed out" —
+      // so treating it as signed-out redirected every non-preauth route to
+      // sign-in, and then redirected again once the real value landed a
+      // moment later, which showed up as an infinite redirect loop on
+      // reload. Never act on an unresolved value: send it to the splash
+      // screen instead, which awaits `authStateProvider.future` itself and
+      // navigates once auth is actually known. This is reached only for
+      // non-preauth locations (the check above already returns null for
+      // splash itself), so the redirect is a single, idempotent hop — the
+      // very next evaluation sees `loc == Routes.splash`, which is preauth
+      // and returns null, not another redirect.
+      if (!auth.hasValue) return Routes.splash;
+
+      final signedIn = auth.value!.isSignedIn;
       if (!signedIn) return Routes.signIn;
 
       // Signed in but profile incomplete — the engine needs entry year and
-      // expected graduation year to count remaining semesters.
-      final profileComplete = auth.valueOrNull?.profileComplete ?? false;
+      // expected graduation year to count remaining semesters. Same rule
+      // as above: only act on this once auth has actually resolved, which
+      // the guard above already guarantees by this point.
+      final profileComplete = auth.value!.profileComplete;
       if (!profileComplete && loc != Routes.profileSetup) {
         return Routes.profileSetup;
       }
