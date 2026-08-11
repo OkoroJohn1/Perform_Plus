@@ -1,7 +1,11 @@
+import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:perform_plus/data/local/app_database.dart';
 import 'package:perform_plus/data/repositories/academic_record_provider.dart';
+import 'package:perform_plus/data/repositories/repository_providers.dart';
 import 'package:perform_plus/data/seed/nigerian_institutions.dart';
 import 'package:perform_plus/domain/models/course_result.dart';
 import 'package:perform_plus/features/home/screens/dashboard_screen.dart';
@@ -36,11 +40,23 @@ Widget _appWith(AcademicRecord record) => ProviderScope(
         academicRecordProvider.overrideWith(
           (ref) => AcademicRecordController.seeded(record),
         ),
+        // The dashboard also reads goalProvider (via the header's error
+        // badge), which resolves through appDatabaseProvider if not
+        // overridden — point it at an in-memory DB so no test touches the
+        // real filesystem/platform channels.
+        appDatabaseProvider.overrideWithValue(
+          AppDatabase.forTesting(NativeDatabase.memory()),
+        ),
       ],
       child: const MaterialApp(home: DashboardScreen()),
     );
 
 void main() {
+  // Each test below constructs its own AppDatabase.forTesting() instance —
+  // that's intentional isolation, not the accidental-duplicate case this
+  // heuristic warns about.
+  driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+
   testWidgets('empty record shows the empty state, not a loading spinner',
       (tester) async {
     await tester.pumpWidget(

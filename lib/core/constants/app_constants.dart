@@ -29,4 +29,11 @@ class AppConstants {
   /// a loss-making promise — see README on unit economics.
   static const freeTierAiActions = 20;
   static const premiumTierAiActions = 200;
+
+  /// Fixed row key for the single local student profile, used by the Drift
+  /// layer (`profiles`/`goals` tables) and `Semester.profileId`. There is
+  /// no real multi-user auth yet — `AuthState.userId` is a separate stub —
+  /// so every local row belongs to this one placeholder profile until
+  /// Supabase auth lands.
+  static const localProfileId = 'local-profile';
 }

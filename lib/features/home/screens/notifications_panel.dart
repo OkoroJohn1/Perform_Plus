@@ -15,6 +15,7 @@ import '../../../data/repositories/academic_record_provider.dart';
 import '../../../data/repositories/goal_provider.dart';
 import '../../../domain/engine/projection_solver.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/glass_card.dart';
 import '../providers/notifications_provider.dart';
 
 enum _Category { academic, ai, system }
@@ -40,6 +41,7 @@ Future<void> showNotificationsPanel(BuildContext context) {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    backgroundColor: Colors.transparent,
     builder: (_) => const NotificationsPanel(),
   );
 }
@@ -105,7 +107,9 @@ class _NotificationsPanelState extends ConsumerState<NotificationsPanel> {
       expand: false,
       builder: (context, scrollController) => Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
+        child: GlassCard(
+          padding: const EdgeInsets.all(16),
+          child: Column(
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -169,6 +173,7 @@ class _NotificationsPanelState extends ConsumerState<NotificationsPanel> {
                     ),
             ),
           ],
+          ),
         ),
       ),
     );

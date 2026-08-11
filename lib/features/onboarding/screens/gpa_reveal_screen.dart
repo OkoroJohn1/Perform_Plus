@@ -1,9 +1,8 @@
-/// GPA reveal — the payoff after entering results.
+/// GPA reveal — the Act 1 payoff.
 ///
-/// Reached near the end of onboarding (after sign-in, profile, backfill and
-/// goal setting), once the student has added their first semester. Landing
-/// here confirms their goal against real numbers before they reach the
-/// dashboard.
+/// This screen is why the signup gate sits AFTER it rather than before.
+/// The student now has something to lose, which converts far better than
+/// a toll gate placed in front of an unproven promise.
 library;
 
 import 'package:flutter/material.dart';
@@ -11,6 +10,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/routes.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/gradient_button.dart';
+import '../../../shared/widgets/gradient_scaffold.dart';
 import '../providers/onboarding_provider.dart';
 
 class GpaRevealScreen extends ConsumerWidget {
@@ -23,12 +25,12 @@ class GpaRevealScreen extends ConsumerWidget {
     final draft = ref.watch(onboardingDraftProvider);
 
     if (computation == null) {
-      return const Scaffold(
+      return const GradientScaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    return Scaffold(
+    return GradientScaffold(
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -114,30 +116,28 @@ class GpaRevealScreen extends ConsumerWidget {
 
               if (computation.excluded.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                Card(
-                  color: theme.colorScheme.errorContainer,
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Not counted',
-                            style: theme.textTheme.titleSmall),
-                        const SizedBox(height: 4),
-                        ...computation.excluded.map((e) => Text(
-                              '${e.courseCode} — ${e.reason}',
-                              style: theme.textTheme.bodySmall,
-                            )),
-                      ],
-                    ),
+                GlassCard(
+                  tint: theme.colorScheme.error,
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Not counted',
+                          style: theme.textTheme.titleSmall),
+                      const SizedBox(height: 4),
+                      ...computation.excluded.map((e) => Text(
+                            '${e.courseCode} — ${e.reason}',
+                            style: theme.textTheme.bodySmall,
+                          )),
+                    ],
                   ),
                 ),
               ],
 
               const Spacer(),
-              FilledButton(
-                onPressed: () => context.go(Routes.home),
-                child: const Text('Continue to my dashboard'),
+              GradientButton(
+                onPressed: () => context.go(Routes.signIn),
+                child: const Text('Save this and track my CGPA'),
               ),
               const SizedBox(height: 8),
               TextButton(

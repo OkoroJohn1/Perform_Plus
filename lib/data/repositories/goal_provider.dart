@@ -1,25 +1,47 @@
-/// Student's goal target.
-///
-/// TODO(v1): wire to the goal-setting screen (currently a stub, see
-/// goal_setting_screen.dart) and persist alongside the profile. Nothing
-/// sets this yet, so the goal ring shows a "set a goal" prompt for every
-/// user today — the honest state, not a fabricated one.
+/// Student's goal target — persisted via [GoalRepository] so it survives
+/// restarts. Nothing sets this until the student saves a goal, so the ring
+/// shows a "set a goal" prompt for every user until then — the honest
+/// state, not a fabricated one.
 library;
+
+import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/engine/projection_solver.dart';
-import '../../domain/models/grading_scheme.dart';
+import '../../domain/models/goal_target.dart';
+import '../../domain/repositories/goal_repository.dart';
 import 'academic_record_provider.dart';
+import 'repository_providers.dart';
 
-class GoalTarget {
-  final ClassificationBand band;
-  final int semestersRemaining;
+export '../../domain/models/goal_target.dart';
 
-  const GoalTarget({required this.band, required this.semestersRemaining});
+class GoalController extends StateNotifier<GoalTarget?> {
+  final GoalRepository _repository;
+
+  GoalController(this._repository) : super(null) {
+    unawaited(_loadPersisted());
+  }
+
+  Future<void> _loadPersisted() async {
+    final persisted = await _repository.loadGoal();
+    if (persisted != null) state = persisted;
+  }
+
+  void save(GoalTarget goal) {
+    state = goal;
+    unawaited(_repository.saveGoal(goal));
+  }
+
+  void clear() {
+    state = null;
+    unawaited(_repository.clearGoal());
+  }
 }
 
-final goalProvider = StateProvider<GoalTarget?>((ref) => null);
+final goalProvider = StateNotifierProvider<GoalController, GoalTarget?>(
+  (ref) => GoalController(ref.watch(goalRepositoryProvider)),
+);
 
 /// Null when no goal is set or the record has no data yet — the ring has
 /// nothing honest to show in either case.

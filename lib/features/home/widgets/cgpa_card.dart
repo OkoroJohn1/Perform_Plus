@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 
 import '../../../domain/engine/cgpa_engine.dart';
 import '../../../domain/engine/projection_solver.dart';
+import '../../../shared/widgets/glass_card.dart';
 
 class CgpaCard extends StatelessWidget {
   final AcademicStanding standing;
@@ -28,7 +29,7 @@ class CgpaCard extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    return Card(
+    return GlassCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(

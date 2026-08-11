@@ -2,45 +2,44 @@ import 'package:flutter/material.dart';
 
 /// Theme.
 ///
-/// One seed colour drives both modes. Your three mockup variants
-/// (purple/blue, green, red) are one constant change away from each other —
-/// swap [seed] to try a direction rather than rebuilding the board.
-///
-/// A note on the red variant: red carries error/danger semantics in every
-/// UI convention. On a screen that tells a student their CGPA fell short of
-/// a goal, a red-primary interface makes an already difficult moment feel
-/// like a system failure. Green and purple both leave red free to mean
-/// "something is wrong", which you will want.
+/// Every screen now sits on [GradientScaffold]'s permanent dark blue-black
+/// gradient (see `shared/widgets/gradient_scaffold.dart`) with
+/// [GlassCard]/[GradientButton] surfaces on top — there is no flat light
+/// background left in the app. `AppTheme.light` and `AppTheme.dark` both
+/// resolve to the same dark-appropriate `ColorScheme`/text colors so text
+/// stays legible regardless of the system/user theme-mode setting; the
+/// distinction is kept only so the Me tab's dark-mode toggle has something
+/// to point at if a genuinely different second look is added later.
 class AppTheme {
   const AppTheme._();
 
   static const seed = Color(0xFF5B4BD4);
 
-  /// The mockup's screens sit on a faint lavender tint, not flat white —
-  /// cards read as distinct surfaces against it without needing shadows.
-  static const _lightBackground = Color(0xFFF8F7FD);
-  static const _darkBackground = Color(0xFF14102B);
+  static ThemeData get light => _build();
+  static ThemeData get dark => _build();
 
-  static ThemeData get light => _build(Brightness.light);
-  static ThemeData get dark => _build(Brightness.dark);
-
-  static ThemeData _build(Brightness brightness) {
+  static ThemeData _build() {
     final scheme = ColorScheme.fromSeed(
       seedColor: seed,
-      brightness: brightness,
+      brightness: Brightness.dark,
     );
-    final background =
-        brightness == Brightness.light ? _lightBackground : _darkBackground;
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: background,
+      scaffoldBackgroundColor: Colors.transparent,
+      textTheme: Typography.whiteMountainView.apply(
+        bodyColor: Colors.white,
+        displayColor: Colors.white,
+      ),
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
         ),
         isDense: true,
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.06),
+        labelStyle: const TextStyle(color: Colors.white70),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -52,16 +51,27 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: brightness == Brightness.light ? Colors.white : null,
+        color: Colors.white.withValues(alpha: 0.08),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: scheme.outlineVariant),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
         ),
       ),
-      appBarTheme: AppBarTheme(
-        backgroundColor: background,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: Colors.white.withValues(alpha: 0.06),
+        indicatorColor: scheme.primary.withValues(alpha: 0.4),
+        labelTextStyle: WidgetStateProperty.all(
+          const TextStyle(color: Colors.white, fontSize: 12),
+        ),
+        iconTheme: WidgetStateProperty.all(
+          const IconThemeData(color: Colors.white),
+        ),
       ),
     );
   }

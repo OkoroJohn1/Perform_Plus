@@ -17,6 +17,9 @@ import '../../../data/repositories/goal_provider.dart';
 import '../../../domain/engine/projection_solver.dart';
 import '../../../domain/models/grading_scheme.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/gradient_button.dart';
+import '../../../shared/widgets/gradient_scaffold.dart';
 import '../../auth/providers/profile_provider.dart';
 
 class GoalSettingScreen extends ConsumerStatefulWidget {
@@ -37,7 +40,7 @@ class _GoalSettingScreenState extends ConsumerState<GoalSettingScreen> {
     final profile = ref.watch(studentProfileProvider);
 
     if (!standing.hasData) {
-      return Scaffold(
+      return GradientScaffold(
         appBar: AppBar(title: const Text('Set your goal')),
         body: EmptyState(
           icon: Icons.flag_outlined,
@@ -70,7 +73,7 @@ class _GoalSettingScreenState extends ConsumerState<GoalSettingScreen> {
       semestersRemaining: semestersRemaining,
     );
 
-    return Scaffold(
+    return GradientScaffold(
       appBar: AppBar(title: const Text('Set your goal')),
       body: SafeArea(
         child: Padding(
@@ -97,10 +100,9 @@ class _GoalSettingScreenState extends ConsumerState<GoalSettingScreen> {
                 onChanged: (b) => setState(() => _selected = b),
               ),
               const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: selectedProjection.isReachable
+              GlassCard(
+                padding: const EdgeInsets.all(16),
+                child: selectedProjection.isReachable
                       ? Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -138,48 +140,45 @@ class _GoalSettingScreenState extends ConsumerState<GoalSettingScreen> {
                               ),
                             ],
                           ],
-                      ),
-                ),
+                        ),
               ),
               const SizedBox(height: 12),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Your current trajectory',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
+              GlassCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Your current trajectory',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${trajectory.projectedCgpa.toStringAsFixed(2)} CGPA',
-                        style: theme.textTheme.headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      Text(
-                        'if you maintain your current ${standing.cgpa.toStringAsFixed(2)} average',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${trajectory.projectedCgpa.toStringAsFixed(2)} CGPA',
+                      style: theme.textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    Text(
+                      'if you maintain your current ${standing.cgpa.toStringAsFixed(2)} average',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
                 ),
               ),
               const Spacer(),
-              FilledButton(
+              GradientButton(
                 onPressed: () {
                   final band = _selected ??
                       scheme.bandsDescending.firstWhere(
                         (b) => b.label == selectedProjection.targetLabel,
                       );
-                  ref.read(goalProvider.notifier).state = GoalTarget(
-                    band: band,
-                    semestersRemaining: semestersRemaining,
-                  );
-                  context.go(Routes.addFirstResults);
+                  ref.read(goalProvider.notifier).save(GoalTarget(
+                        band: band,
+                        semestersRemaining: semestersRemaining,
+                      ));
+                  context.go(Routes.home);
                 },
                 child: const Text('Save Goal'),
               ),

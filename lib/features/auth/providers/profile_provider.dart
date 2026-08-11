@@ -1,64 +1,39 @@
-/// Student profile — kept separate from [AuthState], which is auth-only.
-///
-/// TODO(v1): replace with a Drift/Supabase-backed repository once local
-/// storage lands. Until then this is in-memory and resets on app restart,
-/// same posture as every other provider in the app pre-Drift.
+/// Student profile provider — kept separate from [AuthState], which is
+/// auth-only. The [StudentProfile] model itself lives in
+/// `lib/domain/models/student_profile.dart` (pure Dart) so
+/// `lib/domain/repositories/profile_repository.dart` can reference it
+/// without depending on this feature folder. Persisted via
+/// [ProfileRepository] so it survives restarts.
 library;
+
+import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants/app_constants.dart';
+import '../../../data/repositories/repository_providers.dart';
+import '../../../domain/models/student_profile.dart';
+import '../../../domain/repositories/profile_repository.dart';
 
-class StudentProfile {
-  final String fullName;
-  final String regNumber;
-  final String department;
-  final int currentLevel;
-  final int entryYear;
-  final int expectedGraduationYear;
+export '../../../domain/models/student_profile.dart';
 
-  const StudentProfile({
-    required this.fullName,
-    required this.regNumber,
-    required this.department,
-    required this.currentLevel,
-    required this.entryYear,
-    required this.expectedGraduationYear,
-  });
+class ProfileController extends StateNotifier<StudentProfile?> {
+  final ProfileRepository _repository;
 
-  String get initials {
-    final parts = fullName.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
-    if (parts.isEmpty) return '?';
-    return parts.take(2).map((p) => p[0].toUpperCase()).join();
+  ProfileController(this._repository) : super(null) {
+    unawaited(_loadPersisted());
   }
 
-  StudentProfile copyWith({
-    String? fullName,
-    String? regNumber,
-    String? department,
-    int? currentLevel,
-    int? entryYear,
-    int? expectedGraduationYear,
-  }) =>
-      StudentProfile(
-        fullName: fullName ?? this.fullName,
-        regNumber: regNumber ?? this.regNumber,
-        department: department ?? this.department,
-        currentLevel: currentLevel ?? this.currentLevel,
-        entryYear: entryYear ?? this.entryYear,
-        expectedGraduationYear:
-            expectedGraduationYear ?? this.expectedGraduationYear,
-      );
+  Future<void> _loadPersisted() async {
+    final persisted = await _repository.loadProfile();
+    if (persisted != null) state = persisted;
+  }
+
+  void save(StudentProfile profile) {
+    state = profile;
+    unawaited(_repository.saveProfile(profile));
+  }
 }
 
-final studentProfileProvider = StateProvider<StudentProfile?>((ref) => null);
-
-/// Semesters left before expected graduation, computed from the profile's
-/// own years — never invented. Floors at zero for a profile whose expected
-/// graduation year has already passed.
-int semestersRemainingFor(StudentProfile profile) {
-  final currentYear = DateTime.now().year;
-  final yearsRemaining = profile.expectedGraduationYear - currentYear;
-  if (yearsRemaining <= 0) return 0;
-  return yearsRemaining * AppConstants.semestersPerLevel;
-}
+final studentProfileProvider = StateNotifierProvider<ProfileController, StudentProfile?>(
+  (ref) => ProfileController(ref.watch(profileRepositoryProvider)),
+);

@@ -13,6 +13,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/routes.dart';
 import '../../../data/repositories/goal_provider.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/gradient_scaffold.dart';
 import '../services/advisor_template.dart';
 
 class AiShell extends ConsumerWidget {
@@ -23,7 +25,7 @@ class AiShell extends ConsumerWidget {
     final theme = Theme.of(context);
     final projection = ref.watch(targetProjectionProvider);
 
-    return Scaffold(
+    return GradientScaffold(
       appBar: AppBar(title: const Text('AI Advisor')),
       body: projection == null
           ? EmptyState(
@@ -40,34 +42,27 @@ class AiShell extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Card(
-                      color: theme.colorScheme.primaryContainer,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.auto_awesome, color: theme.colorScheme.onPrimaryContainer),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Advisor Insight',
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    color: theme.colorScheme.onPrimaryContainer,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              insight.headline,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                color: theme.colorScheme.onPrimaryContainer,
-                              ),
-                            ),
-                          ],
-                        ),
+                    GlassCard(
+                      tint: theme.colorScheme.primary,
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.auto_awesome, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text('Advisor Insight',
+                                  style: TextStyle(fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            insight.headline,
+                            style: theme.textTheme.titleMedium
+                                ?.copyWith(color: Colors.white),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 16),

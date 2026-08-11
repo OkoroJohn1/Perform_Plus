@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/routes.dart';
+import 'gradient_scaffold.dart';
 
 class AppScaffold extends StatelessWidget {
   final Widget child;
@@ -27,7 +28,7 @@ class AppScaffold extends StatelessWidget {
     final location = GoRouterState.of(context).matchedLocation;
     final index = Routes.tabIndexFor(location);
 
-    return Scaffold(
+    return GradientScaffold(
       body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,

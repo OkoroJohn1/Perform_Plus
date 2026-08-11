@@ -1,9 +1,8 @@
 /// Onboarding draft state.
 ///
-/// Holds results entered on the Add Results screen, near the end of
-/// onboarding (after sign-in, profile, backfill and goal setting). Kept
-/// separate from [academicRecordProvider] until [commitDraft] so a student
-/// mid-entry doesn't have a half-finished semester counted yet.
+/// Holds results entered during Act 1, BEFORE any account exists. Persisted
+/// locally so a student who closes the app mid-entry does not lose work and
+/// so the draft survives to be attached to an account at signup.
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -114,8 +113,10 @@ class OnboardingDraft {
 class OnboardingDraftNotifier extends StateNotifier<OnboardingDraft> {
   OnboardingDraftNotifier()
       : super(OnboardingDraft(
-          institutionId: 'custom',
-          scheme: fallbackScheme,
+          // FUTO-only for now — no institution picker. See AGENTS.md's
+          // "Open questions" for the one-institution-at-launch rationale.
+          institutionId: 'futo',
+          scheme: defaultSchemes['futo']!,
           session: _currentSession(),
           level: 100,
           term: SemesterTerm.first,
@@ -182,7 +183,7 @@ class OnboardingDraftNotifier extends StateNotifier<OnboardingDraft> {
     state = state.copyWith(
       committed: Semester(
         id: semesterId,
-        profileId: 'draft',
+        profileId: AppConstants.localProfileId,
         session: state.session,
         term: state.term,
         level: state.level,
@@ -199,8 +200,8 @@ final onboardingDraftProvider =
   (ref) => OnboardingDraftNotifier(),
 );
 
-/// The computed GPA for the draft semester. Pure engine call, no network —
-/// this is the reveal screen's payoff.
+/// The computed GPA for the draft semester. Pure engine call, no network,
+/// no auth. This is the Act 1 payoff.
 final draftComputationProvider = Provider<SemesterComputation?>((ref) {
   final draft = ref.watch(onboardingDraftProvider);
   final semester = draft.committed;

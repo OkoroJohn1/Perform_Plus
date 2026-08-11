@@ -8,6 +8,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/router/routes.dart';
 import '../../../data/repositories/academic_record_provider.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/gradient_button.dart';
+import '../../../shared/widgets/gradient_scaffold.dart';
 import '../../academics/widgets/add_semester_sheet.dart';
 
 class BackfillScreen extends ConsumerWidget {
@@ -21,7 +24,7 @@ class BackfillScreen extends ConsumerWidget {
         record.semesters.map((s) => s.level).toSet();
     final addedCount = AppConstants.levels.where(addedLevels.contains).length;
 
-    return Scaffold(
+    return GradientScaffold(
       appBar: AppBar(title: const Text('Add earlier semesters')),
       body: SafeArea(
         child: Padding(
@@ -55,7 +58,7 @@ class BackfillScreen extends ConsumerWidget {
                   itemBuilder: (context, i) {
                     final level = AppConstants.levels[i];
                     final added = addedLevels.contains(level);
-                    return Card(
+                    return GlassCard(
                       child: ListTile(
                         leading: Icon(
                           added ? Icons.check_circle : Icons.circle_outlined,
@@ -82,7 +85,7 @@ class BackfillScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton(
+                child: GradientButton(
                   onPressed: () => context.go(Routes.goalSetting),
                   child: const Text('Continue'),
                 ),

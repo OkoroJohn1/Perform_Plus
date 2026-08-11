@@ -7,6 +7,9 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/gradient_button.dart';
+import '../../../shared/widgets/gradient_scaffold.dart';
 import '../../../shared/widgets/locked_feature_row.dart';
 import '../providers/reading_session_provider.dart';
 
@@ -19,13 +22,13 @@ class StudyShell extends ConsumerWidget {
     final reading = ref.watch(readingSessionProvider);
     final controller = ref.read(readingSessionProvider.notifier);
 
-    return Scaffold(
+    return GradientScaffold(
       appBar: AppBar(title: const Text('Study')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Card(
+            GlassCard(
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -38,7 +41,7 @@ class StudyShell extends ConsumerWidget {
                           ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 16),
-                    FilledButton.icon(
+                    GradientButton.icon(
                       onPressed: reading.isRunning ? controller.pause : controller.start,
                       icon: Icon(reading.isRunning ? Icons.pause : Icons.play_arrow),
                       label: Text(reading.isRunning ? 'Pause' : 'Start reading'),

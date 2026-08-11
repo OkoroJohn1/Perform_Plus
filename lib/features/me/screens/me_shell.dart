@@ -6,12 +6,13 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../core/router/routes.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../../data/repositories/academic_record_provider.dart';
 import '../../../data/seed/nigerian_institutions.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/gradient_button.dart';
+import '../../../shared/widgets/gradient_scaffold.dart';
 import '../../../shared/widgets/locked_feature_row.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/providers/profile_provider.dart';
@@ -29,12 +30,12 @@ class MeShell extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     final notificationsEnabled = ref.watch(notificationsEnabledProvider);
 
-    return Scaffold(
+    return GradientScaffold(
       appBar: AppBar(title: const Text('Me')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Card(
+          GlassCard(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -79,7 +80,7 @@ class MeShell extends ConsumerWidget {
           const SizedBox(height: 16),
           Text('Settings', style: theme.textTheme.titleSmall),
           const SizedBox(height: 4),
-          Card(
+          GlassCard(
             child: Column(
               children: [
                 SwitchListTile(
@@ -100,8 +101,6 @@ class MeShell extends ConsumerWidget {
                   leading: const Icon(Icons.grading_outlined),
                   title: const Text('Grading Scheme'),
                   subtitle: Text(record.scheme.name),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.go(Routes.institutionSetup),
                 ),
                 ListTile(
                   leading: const Icon(Icons.tune),
@@ -141,22 +140,26 @@ class MeShell extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      backgroundColor: Colors.transparent,
       builder: (sheetContext) => Padding(
         padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 24,
-          bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
         ),
-        child: SingleChildScrollView(
-          child: ProfileForm(
-            initial: profile,
-            institution: institution,
-            saveLabel: 'Save',
-            onSave: (updated) {
-              ref.read(studentProfileProvider.notifier).state = updated;
-              Navigator.of(sheetContext).pop();
-            },
+        child: GlassCard(
+          padding: const EdgeInsets.all(24),
+          child: SingleChildScrollView(
+            child: ProfileForm(
+              initial: profile,
+              institution: institution,
+              saveLabel: 'Save',
+              onSave: (updated) {
+                ref.read(studentProfileProvider.notifier).save(updated);
+                Navigator.of(sheetContext).pop();
+              },
+            ),
           ),
         ),
       ),
@@ -174,7 +177,7 @@ class MeShell extends ConsumerWidget {
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Cancel'),
           ),
-          FilledButton(
+          GradientButton(
             onPressed: () {
               Navigator.of(dialogContext).pop();
               ref.read(authStateProvider.notifier).signOut();

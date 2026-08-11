@@ -8,15 +8,15 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/router/routes.dart';
 import '../../../shared/widgets/app_logo.dart';
-import '../../../shared/widgets/aurora_background.dart';
+import '../../../shared/widgets/bubble_background.dart';
 import '../../auth/providers/auth_provider.dart';
 
 /// Splash. Max 1.5s, and it does real work: auth check plus local DB init.
 ///
 /// Your original flow had splash, a logo reveal, a tagline screen and three
 /// marketing slides — six screens of promises before the student learned a
-/// single thing about themselves. Those are gone. Screen 2 is functional
-/// onboarding (which school, which grading scheme) instead.
+/// single thing about themselves. Those are gone. Screen 2 is Add Results —
+/// no institution picker, the app is FUTO-only for now.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -65,7 +65,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     }
     if (!mounted) return;
 
-    context.go(auth.isSignedIn ? Routes.home : Routes.institutionSetup);
+    context.go(auth.isSignedIn ? Routes.home : Routes.addFirstResults);
   }
 
   @override
@@ -76,7 +76,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       backgroundColor: background,
       body: Stack(
         children: [
-          const Positioned.fill(child: AuroraBackground()),
+          const Positioned.fill(child: BubbleBackground()),
           Center(
             child: FadeTransition(
               opacity: _fade,

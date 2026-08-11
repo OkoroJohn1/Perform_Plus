@@ -1,11 +1,10 @@
 /// Application routing.
 ///
-/// V1 flow: Splash -> Institution -> Sign in -> Profile -> Backfill ->
-/// Goal setting -> Add results -> GPA reveal -> the five tabs. Every
-/// `/onboarding` path is reachable without authentication (see
-/// `Routes.isPreAuth`), but in practice the flow always routes through
-/// sign-in right after institution choice — see AGENTS.md's "UX
-/// architecture" section.
+/// The route table encodes the Act 1 / Act 2 / Act 3 structure directly:
+/// everything under `/onboarding` is reachable WITHOUT authentication, so a
+/// student can compute a GPA before they are asked to create an account.
+/// Time-to-value is the conversion lever; the signup gate sits after the
+/// payoff, not before it.
 library;
 
 import 'package:flutter/material.dart';
@@ -23,7 +22,6 @@ import '../../features/onboarding/screens/add_first_results_screen.dart';
 import '../../features/onboarding/screens/backfill_screen.dart';
 import '../../features/onboarding/screens/goal_setting_screen.dart';
 import '../../features/onboarding/screens/gpa_reveal_screen.dart';
-import '../../features/onboarding/screens/institution_setup_screen.dart';
 import '../../features/onboarding/screens/splash_screen.dart';
 import '../../features/study/screens/study_shell.dart';
 import '../../shared/widgets/app_scaffold.dart';
@@ -43,7 +41,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final loc = state.matchedLocation;
 
-      // Onboarding is deliberately open. No redirect logic applies here.
+      // Act 1 is deliberately open. No redirect logic applies here.
       if (Routes.isPreAuth(loc)) return null;
 
       final signedIn = auth.valueOrNull?.isSignedIn ?? false;
@@ -66,11 +64,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const SplashScreen(),
       ),
       GoRoute(
-        path: Routes.institutionSetup,
-        builder: (_, __) => const InstitutionSetupScreen(),
+        path: Routes.addFirstResults,
+        builder: (_, __) => const AddFirstResultsScreen(),
+      ),
+      GoRoute(
+        path: Routes.gpaReveal,
+        builder: (_, __) => const GpaRevealScreen(),
       ),
 
-      // ---- Act 2: account, goal and results -------------------------------
+      // ---- Act 2: account and goal ---------------------------------------
       GoRoute(
         path: Routes.signIn,
         builder: (_, __) => const SignInScreen(),
@@ -86,14 +88,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.goalSetting,
         builder: (_, __) => const GoalSettingScreen(),
-      ),
-      GoRoute(
-        path: Routes.addFirstResults,
-        builder: (_, __) => const AddFirstResultsScreen(),
-      ),
-      GoRoute(
-        path: Routes.gpaReveal,
-        builder: (_, __) => const GpaRevealScreen(),
       ),
 
       // ---- Act 3: the tab shell ------------------------------------------

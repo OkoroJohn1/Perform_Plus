@@ -22,6 +22,8 @@ import '../../../data/repositories/academic_record_provider.dart';
 import '../../../data/repositories/goal_provider.dart';
 import '../../../domain/engine/cgpa_engine.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/gradient_scaffold.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/cgpa_card.dart';
@@ -37,7 +39,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final standing = ref.watch(standingProvider);
 
-    return Scaffold(
+    return GradientScaffold(
       body: SafeArea(
         child: Column(
           children: [
@@ -142,7 +144,7 @@ class _PopulatedDashboard extends ConsumerWidget {
           onSetGoal: () => context.go(Routes.goalSetting),
         ),
         const SizedBox(height: 16),
-        Card(
+        GlassCard(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
             child: Column(

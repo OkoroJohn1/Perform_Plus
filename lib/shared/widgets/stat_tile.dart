@@ -5,6 +5,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'glass_card.dart';
+
 class StatTile extends StatelessWidget {
   final String label;
   final String value;
@@ -15,7 +17,7 @@ class StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
+    return GlassCard(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         child: Column(

@@ -8,6 +8,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'gradient_button.dart';
+
 class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -75,7 +77,7 @@ class EmptyState extends StatelessWidget {
             ],
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: 24),
-              FilledButton(onPressed: onAction, child: Text(actionLabel!)),
+              GradientButton(onPressed: onAction, child: Text(actionLabel!)),
             ],
           ],
         ),

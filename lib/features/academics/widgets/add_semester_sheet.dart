@@ -13,6 +13,8 @@ import '../../../core/constants/app_constants.dart';
 import '../../../data/repositories/academic_record_provider.dart';
 import '../../../domain/models/course_result.dart';
 import '../../../domain/models/grading_scheme.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/gradient_button.dart';
 
 const _uuid = Uuid();
 
@@ -42,6 +44,7 @@ Future<void> showAddSemesterSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    backgroundColor: Colors.transparent,
     builder: (_) => AddSemesterSheet(initialLevel: initialLevel),
   );
 }
@@ -84,7 +87,9 @@ class _AddSemesterSheetState extends ConsumerState<AddSemesterSheet> {
           top: 16,
           bottom: MediaQuery.of(context).viewInsets.bottom + 16,
         ),
-        child: Column(
+        child: GlassCard(
+          padding: const EdgeInsets.all(16),
+          child: Column(
           children: [
             Text('Add a semester', style: theme.textTheme.titleLarge),
             const SizedBox(height: 16),
@@ -154,12 +159,13 @@ class _AddSemesterSheetState extends ConsumerState<AddSemesterSheet> {
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              child: FilledButton(
+              child: GradientButton(
                 onPressed: canSave ? _save : null,
                 child: const Text('Save semester'),
               ),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -184,7 +190,7 @@ class _AddSemesterSheetState extends ConsumerState<AddSemesterSheet> {
     ref.read(academicRecordProvider.notifier).addSemester(
           Semester(
             id: semesterId,
-            profileId: 'local',
+            profileId: AppConstants.localProfileId,
             session: _session,
             term: _term,
             level: _level,
@@ -213,16 +219,10 @@ class _RowEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
+    return GlassCard(
+      borderRadius: BorderRadius.circular(12),
+      padding: const EdgeInsets.all(12),
+      child: Row(
           children: [
             Expanded(
               flex: 3,
@@ -266,7 +266,6 @@ class _RowEditor extends StatelessWidget {
               ),
           ],
         ),
-      ),
     );
   }
 }

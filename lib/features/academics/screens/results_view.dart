@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/repositories/academic_record_provider.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/gradient_button.dart';
 import '../../home/widgets/quick_stats_row.dart';
 import '../widgets/add_semester_sheet.dart';
 
@@ -39,7 +41,7 @@ class ResultsView extends ConsumerWidget {
               itemCount: semesters.length,
               itemBuilder: (context, i) {
                 final semester = semesters[i];
-                return Card(
+                return GlassCard(
                   margin: const EdgeInsets.only(bottom: 12),
                   child: Padding(
                     padding: const EdgeInsets.all(12),
@@ -74,7 +76,7 @@ class ResultsView extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          FilledButton.icon(
+          GradientButton.icon(
             onPressed: () => showAddSemesterSheet(context),
             icon: const Icon(Icons.add),
             label: const Text('Add Result'),

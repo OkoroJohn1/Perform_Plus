@@ -1,23 +1,23 @@
 /// Route paths, grouped by act.
 ///
-/// V1 flow: Splash -> Institution -> Sign in -> Profile -> Backfill ->
-/// Goal setting -> Add results -> GPA reveal -> the five tabs. Auth sits
-/// right after institution choice, ahead of every results/goal screen — see
-/// AGENTS.md's "UX architecture" section for the rationale.
+/// V1 flow: Splash -> Add results -> GPA reveal -> Sign in -> Profile ->
+/// Backfill -> Goal setting -> the five tabs. Value (the GPA reveal)
+/// arrives before the signup gate — see AGENTS.md's "UX architecture"
+/// section for the rationale. There is no institution picker — the app is
+/// FUTO-only for now, see AGENTS.md's "Open questions".
 class Routes {
   const Routes._();
 
   // Act 1 — pre-account. Reachable with no session.
   static const splash = '/';
-  static const institutionSetup = '/onboarding/institution';
+  static const addFirstResults = '/onboarding/results';
+  static const gpaReveal = '/onboarding/gpa';
 
-  // Act 2 — account, goal and results.
+  // Act 2 — account and goal.
   static const signIn = '/auth/sign-in';
   static const profileSetup = '/auth/profile-setup';
   static const backfill = '/onboarding/backfill';
   static const goalSetting = '/onboarding/goal';
-  static const addFirstResults = '/onboarding/results';
-  static const gpaReveal = '/onboarding/gpa';
 
   // Act 3 — the five tabs.
   static const home = '/home';

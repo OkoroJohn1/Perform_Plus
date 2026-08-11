@@ -6,6 +6,7 @@ import '../../../data/repositories/academic_record_provider.dart';
 import '../../../domain/engine/cgpa_engine.dart';
 import '../../../domain/engine/projection_solver.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../auth/providers/profile_provider.dart';
 
@@ -61,6 +62,7 @@ class RoadmapView extends ConsumerWidget {
 
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
           final theme = Theme.of(context);
@@ -71,39 +73,42 @@ class RoadmapView extends ConsumerWidget {
             semestersRemaining: 1,
           );
           return Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('Simulate future', style: theme.textTheme.titleLarge),
-                const SizedBox(height: 8),
-                Text(
-                  'If your next semester GPA is ${assumedGpa.toStringAsFixed(2)}:',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                Slider(
-                  value: assumedGpa.clamp(0, scheme.maxPoint),
-                  min: 0,
-                  max: scheme.maxPoint,
-                  divisions: (scheme.maxPoint * 20).round(),
-                  label: assumedGpa.toStringAsFixed(2),
-                  onChanged: (v) => setState(() => assumedGpa = v),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Projected CGPA: ${projection.projectedCgpa.toStringAsFixed(2)}'
-                  '${projection.projectedClassification != null ? ' (${projection.projectedClassification!.shortLabel})' : ''}',
-                  style: theme.textTheme.titleMedium,
-                ),
-                Text(
-                  projection.deltaFromCurrent >= 0
-                      ? 'Up ${projection.deltaFromCurrent.toStringAsFixed(2)} from your current CGPA'
-                      : 'Down ${(-projection.deltaFromCurrent).toStringAsFixed(2)} from your current CGPA',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                ),
-              ],
+            padding: const EdgeInsets.all(16),
+            child: GlassCard(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Simulate future', style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 8),
+                  Text(
+                    'If your next semester GPA is ${assumedGpa.toStringAsFixed(2)}:',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  Slider(
+                    value: assumedGpa.clamp(0, scheme.maxPoint),
+                    min: 0,
+                    max: scheme.maxPoint,
+                    divisions: (scheme.maxPoint * 20).round(),
+                    label: assumedGpa.toStringAsFixed(2),
+                    onChanged: (v) => setState(() => assumedGpa = v),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Projected CGPA: ${projection.projectedCgpa.toStringAsFixed(2)}'
+                    '${projection.projectedClassification != null ? ' (${projection.projectedClassification!.shortLabel})' : ''}',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  Text(
+                    projection.deltaFromCurrent >= 0
+                        ? 'Up ${projection.deltaFromCurrent.toStringAsFixed(2)} from your current CGPA'
+                        : 'Down ${(-projection.deltaFromCurrent).toStringAsFixed(2)} from your current CGPA',
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
             ),
           );
         },

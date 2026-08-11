@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/gradient_scaffold.dart';
 import 'reports_view.dart';
 import 'results_view.dart';
 import 'roadmap_view.dart';
@@ -22,7 +23,7 @@ class _AcademicsShellState extends ConsumerState<AcademicsShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return GradientScaffold(
       appBar: AppBar(title: const Text('Academics')),
       body: Column(
         children: [

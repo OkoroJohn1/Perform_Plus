@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/reg_number.dart';
 import '../../../data/seed/nigerian_institutions.dart';
+import '../../../shared/widgets/gradient_button.dart';
 import '../providers/profile_provider.dart';
 
 class ProfileForm extends StatefulWidget {
@@ -151,7 +152,7 @@ class _ProfileFormState extends State<ProfileForm> {
           ],
         ),
         const SizedBox(height: 24),
-        FilledButton(
+        GradientButton(
           onPressed: _canSave
               ? () => widget.onSave(
                     StudentProfile(

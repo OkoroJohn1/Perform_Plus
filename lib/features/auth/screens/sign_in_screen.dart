@@ -1,11 +1,14 @@
-/// Sign in. Reached right after institution & scheme setup, ahead of
-/// profile, backfill, goal setting and results entry.
+/// Sign in. Reached AFTER the GPA reveal, never before it — the student
+/// already has something to lose by the time they see this screen.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/widgets/app_logo.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/gradient_button.dart';
+import '../../../shared/widgets/gradient_scaffold.dart';
 import '../providers/auth_provider.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
@@ -41,31 +44,21 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       );
     });
 
-    return Scaffold(
+    return GradientScaffold(
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
+            child: GlassCard(
+              padding: const EdgeInsets.all(24),
+              child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // The wordmark is baked white into the asset, so it
-                    // needs a dark backdrop to stay legible on this light
-                    // card — unlike the splash screen, which is dark already.
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0B0A18),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const AppLogo(size: 140),
-                      ),
-                    ),
+                    // The whole app sits on a dark gradient now, so the
+                    // wordmark (baked white into the asset) is legible
+                    // without a bespoke dark backdrop behind it.
+                    const Center(child: AppLogo(size: 140)),
                     const SizedBox(height: 16),
                     Text(
                       _signUpMode ? 'Create account' : 'Welcome back!',
@@ -113,7 +106,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       ),
                     ],
                     const SizedBox(height: 12),
-                    FilledButton(
+                    GradientButton(
                       onPressed: loading
                           ? null
                           : () => ref
@@ -158,7 +151,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       ),
                     ),
                   ],
-                ),
               ),
             ),
           ),

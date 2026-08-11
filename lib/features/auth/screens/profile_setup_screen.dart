@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/routes.dart';
 import '../../../data/seed/nigerian_institutions.dart';
+import '../../../shared/widgets/gradient_scaffold.dart';
 import '../../onboarding/providers/onboarding_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
@@ -26,7 +27,7 @@ class ProfileSetupScreen extends ConsumerWidget {
     final institution =
         nigerianInstitutions.where((i) => i.id == institutionId).firstOrNull;
 
-    return Scaffold(
+    return GradientScaffold(
       appBar: AppBar(title: const Text('Set up your profile')),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -34,7 +35,7 @@ class ProfileSetupScreen extends ConsumerWidget {
           child: ProfileForm(
             institution: institution,
             onSave: (profile) {
-              ref.read(studentProfileProvider.notifier).state = profile;
+              ref.read(studentProfileProvider.notifier).save(profile);
               ref.read(authStateProvider.notifier).markProfileComplete();
               context.go(Routes.backfill);
             },

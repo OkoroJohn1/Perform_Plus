@@ -89,13 +89,13 @@ run in milliseconds. If you need I/O, it belongs in `data/`.
 | Recalculation cascade | Complete |
 | Projection solver | Complete |
 | Grading scheme validation | Complete |
-| Seeded institutions | Structure done, **content unverified** |
-| Routing, theme, 5-tab shell | Complete |
-| Onboarding flow | Working (splash → institution → sign in → profile → backfill → goal setting → results → GPA reveal) |
-| Manual result entry | Working |
-| OCR import | UI shell only, service not wired |
+| Seeded institutions | FUTO only wired into the flow for now; the other 9 in `nigerian_institutions.dart` are unused but kept for a future re-expansion — **content unverified** |
+| Routing, theme, 5-tab shell | Complete — dark gradient/glass design system (`GradientScaffold`/`GlassCard`/`GradientButton`) applied app-wide |
+| Act 1 screens | Working (splash → add results → GPA reveal); no institution picker |
+| Manual result entry | Working — two-step: list courses (code + credit unit), then a dedicated grades step |
+| OCR import | Explicitly out of scope until a real result slip is tested against a real service — see "Grading schemes" section below. Slip photo is a visual reference only, never parsed |
 | Auth | Stub, returns fake local user |
-| Local DB (Drift) | Not started |
+| Local DB (Drift) | Working — `profiles`/`semesters`/`course_results`/`grading_schemes`/`goals`, one DAO each, repository interfaces in `lib/domain/repositories/` |
 | Dashboard | Wired to `CgpaEngine.computeStanding()`; empty/partial/full states |
 | Results CRUD | Not started |
 | Roadmap / Reports / PDF | Not started |
@@ -213,23 +213,21 @@ This is the most emotionally loaded moment in the app.
 
 ## UX architecture
 
-Three acts.
+Three acts. This structure is deliberate — do not gate Act 1 behind auth.
 
-**Act 1 — pre-account, no login.** Splash → institution & scheme setup.
-Two screens; nothing else is reachable before an account exists.
+**Act 1 — pre-account, no login.** Splash → add results → **GPA reveal**.
+Value arrives before signup. The student then has data to lose, which
+converts far better than a toll gate. No institution picker — the app is
+FUTO-only for now (see "Open questions"), so onboarding skips straight from
+splash to results entry.
 
-**Act 2 — account, goal and results.** Auth ("Welcome back") → profile →
-backfill → **goal setting** → add results → **GPA reveal**. Auth sits
-immediately after institution choice, ahead of every results/goal screen —
-a deliberate product decision, revised from an earlier version of this app
-where the GPA reveal ran before signup ("value before the toll gate").
-Goal setting is still a first-class step even though it now runs before any
-results exist for most students — see `goal_setting_screen.dart`'s
-no-data `EmptyState`, which points forward to Add Results rather than
-blocking. Backfill (skippable) is what gives goal setting real numbers to
-project against when a student uses it; a student who skips straight
-through sets an aspirational goal and only sees real trajectory numbers
-once Add Results/GPA reveal complete the flow.
+**Act 2 — commitment.** Auth → profile → backfill → **goal setting**.
+Goal setting is a first-class step; every later screen is framed against the
+answer. Without it, the app is a calculator. By the time a student reaches
+this screen they already have at least one semester of results from Act 1,
+so the projections shown here are real, not aspirational — the no-data
+`EmptyState` in `goal_setting_screen.dart` is a defensive fallback, not the
+expected path.
 
 **Act 3 — return loop.** Five tabs. Grouped by what the student is *doing*:
 
@@ -294,6 +292,12 @@ lecture PDF; generate the summary once.
 - **State:** Riverpod. `StateNotifierProvider` for mutable, `Provider` for derived.
 - **Routing:** go_router. Paths in `core/router/routes.dart`, never inline strings.
 - **Style:** `flutter_lints`, single quotes, trailing commas.
+- **Visual design:** dark blue-black gradient + frosted glass, applied via
+  `shared/widgets/gradient_scaffold.dart`, `glass_card.dart`,
+  `gradient_button.dart` — use these instead of bare `Scaffold`/`Card`/
+  `FilledButton` everywhere. `AppTheme.light`/`.dark` both resolve to the
+  same dark-appropriate `ColorScheme` since the backdrop is permanently
+  dark now; there is no flat light theme left in the app.
 - **IDs:** UUID v4 via `uuid`.
 - **Money:** Naira. **Never floats.** Integer kobo.
 - **Dates:** ISO 8601 in storage, `intl` for display.
@@ -352,8 +356,10 @@ for launching one institution deep rather than nine shallow.
 
 ## Open questions
 
-1. **One institution or nine at launch?** Determines whether the OCR
-   investment pays off and whether community features reach critical mass.
+1. ~~One institution or nine at launch?~~ **Resolved: FUTO only.** The
+   institution picker is removed; `OnboardingDraftNotifier` defaults straight
+   to `defaultSchemes['futo']`. The other 9 seeded institutions stay in
+   `nigerian_institutions.dart`, unused, for a cheap future re-expansion.
 2. **Does the reading timer belong in V1?** It is the only daily hook — the
    CGPA loop fires twice a year, which is uninstall territory — but it is
    unrelated to the core value proposition.
@@ -368,6 +374,7 @@ for launching one institution deep rather than nine shallow.
 - Do not let the LLM compute grades, GPAs, or projections.
 - Do not add `package:flutter` imports to `lib/domain/`.
 - Do not guess a carryover policy.
+- Do not gate Act 1 behind authentication.
 - Do not fabricate probability scores.
 - Do not add portal credential scraping.
 - Do not put API keys in the client.

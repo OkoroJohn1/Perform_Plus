@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 
 import '../../../domain/engine/cgpa_engine.dart';
 import '../../../domain/engine/projection_solver.dart';
+import '../../../shared/widgets/glass_card.dart';
 
 class NextActionCard extends StatelessWidget {
   final AcademicStanding standing;
@@ -27,7 +28,7 @@ class NextActionCard extends StatelessWidget {
     final theme = Theme.of(context);
     final action = _resolve();
 
-    return Card(
+    return GlassCard(
       child: ListTile(
         onTap: onTap,
         leading: CircleAvatar(

@@ -4,9 +4,14 @@
 /// demands 40 rows of typing before any value appears, most users abandon
 /// around course six. This is where every Nigerian CGPA app has died.
 ///
-/// The import path (photograph a result slip -> OCR -> editable review
-/// table) turns twenty minutes of typing into thirty seconds and one review
-/// pass. Manual entry stays as the always-available fallback.
+/// Three steps: optionally photograph the course registration slip (kept
+/// as a visual reference only — see [_SlipStep]), list your courses (code +
+/// credit unit), then fill in one grade per course. No OCR — there is no
+/// extraction service wired up, and AGENTS.md is explicit that a
+/// fabricated grade is worse than none. Splitting course entry from grade
+/// entry still turns "type everything in one long form" into "list what
+/// you took, then just fill in the blanks," which is the shape that
+/// matters even without automatic extraction.
 ///
 /// NOTE: we deliberately do NOT offer portal-credential scraping. Asking a
 /// student for their university login is a credential-theft liability, it
@@ -24,8 +29,13 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/router/routes.dart';
 import '../../../domain/models/course_result.dart';
+import '../../../domain/models/grading_scheme.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/gradient_button.dart';
+import '../../../shared/widgets/gradient_scaffold.dart';
 import '../providers/onboarding_provider.dart';
-import '../widgets/result_entry_row.dart';
+
+enum _Step { slip, courses, grades }
 
 class AddFirstResultsScreen extends ConsumerStatefulWidget {
   const AddFirstResultsScreen({super.key});
@@ -36,111 +46,491 @@ class AddFirstResultsScreen extends ConsumerStatefulWidget {
 }
 
 class _AddFirstResultsScreenState extends ConsumerState<AddFirstResultsScreen> {
-  bool _importMode = true;
+  _Step _step = _Step.slip;
+
+  @override
+  Widget build(BuildContext context) {
+    final draft = ref.watch(onboardingDraftProvider);
+    final notifier = ref.read(onboardingDraftProvider.notifier);
+
+    final validRows = draft.rows
+        .where((r) => r.courseCode.trim().isNotEmpty && r.creditUnit != null)
+        .toList();
+    final coursesReady = validRows.isNotEmpty;
+    final allGraded = coursesReady && validRows.every((r) => r.grade != null);
+
+    return GradientScaffold(
+      appBar: AppBar(
+        title: const Text('Add your results'),
+        automaticallyImplyLeading: _step != _Step.slip,
+        leading: _step == _Step.slip
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => setState(() {
+                  _step = _step == _Step.grades ? _Step.courses : _Step.slip;
+                }),
+              ),
+      ),
+      body: SafeArea(
+        child: switch (_step) {
+          _Step.slip => _SlipStep(onContinue: () => setState(() => _step = _Step.courses)),
+          _Step.courses => _CoursesStep(
+              draft: draft,
+              notifier: notifier,
+              canContinue: coursesReady,
+              onContinue: () => setState(() => _step = _Step.grades),
+            ),
+          _Step.grades => _GradesStep(
+              rows: validRows,
+              draft: draft,
+              notifier: notifier,
+              canSave: allGraded,
+              onSave: () {
+                notifier.commitDraft();
+                context.go(Routes.gpaReveal);
+              },
+            ),
+        },
+      ),
+    );
+  }
+}
+
+/// Step 1 — optional photo of the course registration slip. Kept as a
+/// visual reference only; nothing reads it. The card is a slightly
+/// unequal stack, not a single flat rectangle.
+class _SlipStep extends StatefulWidget {
+  final VoidCallback onContinue;
+
+  const _SlipStep({required this.onContinue});
+
+  @override
+  State<_SlipStep> createState() => _SlipStepState();
+}
+
+class _SlipStepState extends State<_SlipStep> {
+  final _picker = ImagePicker();
+  Uint8List? _pickedBytes;
+  bool _picking = false;
+
+  Future<void> _pick(ImageSource source) async {
+    setState(() => _picking = true);
+    try {
+      final file = await _picker.pickImage(source: source, imageQuality: 85);
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      if (!mounted) return;
+      setState(() => _pickedBytes = bytes);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            source == ImageSource.camera
+                ? 'Could not open the camera on this device.'
+                : 'Could not open the file picker.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _picking = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final draft = ref.watch(onboardingDraftProvider);
-    final notifier = ref.read(onboardingDraftProvider.notifier);
+    final picked = _pickedBytes;
 
-    final canContinue = draft.rows.any((r) => r.isComplete);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add your results'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go(Routes.goalSetting),
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: _SessionSelector(
-                session: draft.session,
-                level: draft.level,
-                term: draft.term,
-                onChanged: notifier.setSemesterContext,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(
-                    value: true,
-                    label: Text('Import slip'),
-                    icon: Icon(Icons.photo_camera_outlined),
-                  ),
-                  ButtonSegment(
-                    value: false,
-                    label: Text('Manual entry'),
-                    icon: Icon(Icons.edit_outlined),
-                  ),
-                ],
-                selected: {_importMode},
-                onSelectionChanged: (s) =>
-                    setState(() => _importMode = s.first),
-              ),
-            ),
-            Expanded(
-              child: _importMode
-                  ? _ImportPane(
-                      onContinueToManual: () => setState(() => _importMode = false),
-                    )
-                  : _ManualPane(
-                      rows: draft.rows,
-                      onChanged: notifier.updateRow,
-                      onRemove: notifier.removeRow,
-                      onAdd: notifier.addBlankRow,
-                    ),
-            ),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (draft.hasFlaggedRows)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Row(
-                          children: [
-                            Icon(Icons.info_outline,
-                                size: 18, color: theme.colorScheme.tertiary),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                '${draft.flaggedCount} row(s) need a quick '
-                                'check before we count them.',
-                                style: theme.textTheme.bodySmall,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Center(
+              child: picked == null
+                  ? _StackedUploadCard(picking: _picking)
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Stack(
+                        alignment: Alignment.topRight,
+                        children: [
+                          Image.memory(picked, width: double.infinity, height: 280, fit: BoxFit.cover),
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: CircleAvatar(
+                              backgroundColor: Colors.black54,
+                              child: IconButton(
+                                icon: const Icon(Icons.close, color: Colors.white),
+                                tooltip: 'Remove photo',
+                                onPressed: () => setState(() => _pickedBytes = null),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: canContinue
-                            ? () {
-                                notifier.commitDraft();
-                                context.go(Routes.gpaReveal);
-                              }
-                            : null,
-                        child: const Text('Calculate my GPA'),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          if (picked == null)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: const Text('Choose file'),
+                    onPressed: _picking ? null : () => _pick(ImageSource.gallery),
+                  ),
                 ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GradientButton.icon(
+                    icon: const Icon(Icons.camera_alt_outlined),
+                    label: const Text('Take photo'),
+                    onPressed: _picking ? null : () => _pick(ImageSource.camera),
+                  ),
+                ),
+              ],
+            ),
+          const SizedBox(height: 16),
+          Text(
+            picked == null
+                ? 'Everything stays on your device until you choose to save it.'
+                : 'Saved as a reference — you\'ll list your courses next.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(color: Colors.white60),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: GradientButton(
+              onPressed: widget.onContinue,
+              child: const Text('Continue'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The dropzone card, drawn as a stack of unequally-offset cards rather
+/// than one flat rectangle.
+class _StackedUploadCard extends StatelessWidget {
+  final bool picking;
+
+  const _StackedUploadCard({required this.picking});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 280,
+      height: 260,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            top: 18,
+            left: 6,
+            right: 26,
+            bottom: 6,
+            child: Transform.rotate(
+              angle: -0.09,
+              child: GlassCard(
+                blurSigma: 6,
+                borderRadius: BorderRadius.circular(20),
+                child: const SizedBox.expand(),
               ),
             ),
-          ],
+          ),
+          Positioned(
+            top: 8,
+            left: 20,
+            right: 6,
+            bottom: 22,
+            child: Transform.rotate(
+              angle: 0.06,
+              child: GlassCard(
+                blurSigma: 10,
+                borderRadius: BorderRadius.circular(20),
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
+          GlassCard(
+            borderRadius: BorderRadius.circular(20),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: Colors.white.withValues(alpha: 0.15),
+                  child: picking
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.camera_alt_outlined, size: 28, color: Colors.white),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Upload or photograph your course registration slip',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'We\'ll keep it here while you add your results below',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white60),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Step 2 — list courses (code + credit unit only, no grade yet).
+class _CoursesStep extends StatelessWidget {
+  final OnboardingDraft draft;
+  final OnboardingDraftNotifier notifier;
+  final bool canContinue;
+  final VoidCallback onContinue;
+
+  const _CoursesStep({
+    required this.draft,
+    required this.notifier,
+    required this.canContinue,
+    required this.onContinue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: _SessionSelector(
+            session: draft.session,
+            level: draft.level,
+            term: draft.term,
+            onChanged: notifier.setSemesterContext,
+          ),
         ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'What courses did you take?',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+        ),
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: draft.rows.length + 1,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, i) {
+              if (i == draft.rows.length) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: OutlinedButton.icon(
+                    onPressed: notifier.addBlankRow,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add another course'),
+                  ),
+                );
+              }
+              return _CourseRow(
+                row: draft.rows[i],
+                onChanged: (r) => notifier.updateRow(i, r),
+                onRemove: draft.rows.length > 1 ? () => notifier.removeRow(i) : null,
+              );
+            },
+          ),
+        ),
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: SizedBox(
+              width: double.infinity,
+              child: GradientButton(
+                onPressed: canContinue ? onContinue : null,
+                child: const Text('Next: Add your grades'),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CourseRow extends StatelessWidget {
+  final DraftResultRow row;
+  final ValueChanged<DraftResultRow> onChanged;
+  final VoidCallback? onRemove;
+
+  const _CourseRow({required this.row, required this.onChanged, this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: TextFormField(
+              initialValue: row.courseCode,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(labelText: 'Course', isDense: true),
+              onChanged: (v) => onChanged(row.copyWith(courseCode: v)),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 2,
+            child: DropdownButtonFormField<int>(
+              initialValue: row.creditUnit,
+              decoration: const InputDecoration(labelText: 'Units', isDense: true),
+              items: List.generate(
+                AppConstants.maxCreditUnit,
+                (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}')),
+              ),
+              onChanged: (v) => onChanged(row.copyWith(creditUnit: v)),
+            ),
+          ),
+          if (onRemove != null)
+            IconButton(
+              icon: const Icon(Icons.close, size: 18),
+              onPressed: onRemove,
+              tooltip: 'Remove',
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Step 3 — the same course list, one grade field each.
+class _GradesStep extends StatelessWidget {
+  final List<DraftResultRow> rows;
+  final OnboardingDraft draft;
+  final OnboardingDraftNotifier notifier;
+  final bool canSave;
+  final VoidCallback onSave;
+
+  const _GradesStep({
+    required this.rows,
+    required this.draft,
+    required this.notifier,
+    required this.canSave,
+    required this.onSave,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Fill in your grades',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+        ),
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: rows.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, i) {
+              final row = rows[i];
+              final index = draft.rows.indexOf(row);
+              return _GradeRow(
+                row: row,
+                scheme: draft.scheme,
+                onChanged: (r) => notifier.updateRow(index, r),
+              );
+            },
+          ),
+        ),
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: SizedBox(
+              width: double.infinity,
+              child: GradientButton(
+                onPressed: canSave ? onSave : null,
+                child: const Text('Calculate my GPA'),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GradeRow extends StatelessWidget {
+  final DraftResultRow row;
+  final GradingScheme scheme;
+  final ValueChanged<DraftResultRow> onChanged;
+
+  const _GradeRow({required this.row, required this.scheme, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GlassCard(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(row.courseCode, style: theme.textTheme.titleSmall),
+                Text(
+                  '${row.creditUnit} unit${row.creditUnit == 1 ? '' : 's'}',
+                  style: theme.textTheme.bodySmall?.copyWith(color: Colors.white60),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 2,
+            child: DropdownButtonFormField<String>(
+              initialValue: row.grade,
+              decoration: const InputDecoration(labelText: 'Grade', isDense: true),
+              items: scheme.grades
+                  .map((g) => DropdownMenuItem(
+                        value: g.letter,
+                        child: Text('${g.letter} (${g.point})'),
+                      ))
+                  .toList(),
+              onChanged: (v) => onChanged(row.copyWith(grade: v)),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -187,222 +577,5 @@ class _SessionSelector extends StatelessWidget {
             ),
           ),
         ],
-      );
-}
-
-/// Import pane.
-///
-/// Picking a photo is real — [ImagePicker] actually opens the gallery or
-/// camera and the slip is kept as a visual reference. TODO(v1): wire the
-/// picked image to an OCR service so the review table below pre-fills
-/// itself. Before planning around that, grab a real result slip from the
-/// target institution and test extraction on it — if accuracy is poor on
-/// the actual portal output format, the whole screen collapses back into
-/// manual typing and the flow needs rethinking. Until then, a picked photo
-/// hands off to manual entry rather than inventing grades no OCR pass ever
-/// actually read — a fabricated grade is worse than none.
-class _ImportPane extends StatefulWidget {
-  final VoidCallback onContinueToManual;
-
-  const _ImportPane({required this.onContinueToManual});
-
-  @override
-  State<_ImportPane> createState() => _ImportPaneState();
-}
-
-class _ImportPaneState extends State<_ImportPane> {
-  final _picker = ImagePicker();
-  Uint8List? _pickedBytes;
-  bool _picking = false;
-
-  Future<void> _pick(ImageSource source) async {
-    setState(() => _picking = true);
-    try {
-      final file = await _picker.pickImage(source: source, imageQuality: 85);
-      if (file == null) return;
-      final bytes = await file.readAsBytes();
-      if (!mounted) return;
-      setState(() => _pickedBytes = bytes);
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            source == ImageSource.camera
-                ? 'Could not open the camera on this device.'
-                : 'Could not open the file picker.',
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _picking = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final picked = _pickedBytes;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (picked == null)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 40),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.25),
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.4),
-                    style: BorderStyle.solid,
-                    width: 1.5,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 28,
-                      backgroundColor: theme.colorScheme.primaryContainer,
-                      child: _picking
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Icon(
-                              Icons.camera_alt_outlined,
-                              size: 28,
-                              color: theme.colorScheme.onPrimaryContainer,
-                            ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Upload or photograph your result slip',
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'We\'ll keep it here while you add your results below',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Stack(
-                  alignment: Alignment.topRight,
-                  children: [
-                    Image.memory(
-                      picked,
-                      width: double.infinity,
-                      height: 220,
-                      fit: BoxFit.cover,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: CircleAvatar(
-                        backgroundColor: Colors.black54,
-                        child: IconButton(
-                          icon: const Icon(Icons.close, color: Colors.white),
-                          tooltip: 'Remove photo',
-                          onPressed: () => setState(() => _pickedBytes = null),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 16),
-            if (picked == null)
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.photo_library_outlined),
-                      label: const Text('Choose file'),
-                      onPressed: _picking ? null : () => _pick(ImageSource.gallery),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton.icon(
-                      icon: const Icon(Icons.camera_alt_outlined),
-                      label: const Text('Take photo'),
-                      onPressed: _picking ? null : () => _pick(ImageSource.camera),
-                    ),
-                  ),
-                ],
-              )
-            else
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.checklist_outlined),
-                  label: const Text('Enter what\'s on the slip'),
-                  onPressed: widget.onContinueToManual,
-                ),
-              ),
-            const SizedBox(height: 24),
-            Text(
-              picked == null
-                  ? 'Everything stays on your device until you choose to save it.'
-                  : 'Automatic reading isn\'t available yet — add the courses you see in the photo below.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ManualPane extends StatelessWidget {
-  final List<DraftResultRow> rows;
-  final void Function(int, DraftResultRow) onChanged;
-  final void Function(int) onRemove;
-  final VoidCallback onAdd;
-
-  const _ManualPane({
-    required this.rows,
-    required this.onChanged,
-    required this.onRemove,
-    required this.onAdd,
-  });
-
-  @override
-  Widget build(BuildContext context) => ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: rows.length + 1,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, i) {
-          if (i == rows.length) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: OutlinedButton.icon(
-                onPressed: onAdd,
-                icon: const Icon(Icons.add),
-                label: const Text('Add another course'),
-              ),
-            );
-          }
-          return ResultEntryRow(
-            row: rows[i],
-            onChanged: (r) => onChanged(i, r),
-            onRemove: rows.length > 1 ? () => onRemove(i) : null,
-          );
-        },
       );
 }
