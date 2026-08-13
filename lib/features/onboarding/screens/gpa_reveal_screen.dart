@@ -10,25 +10,68 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/routes.dart';
+import '../../../data/repositories/academic_record_provider.dart';
+import '../../../domain/engine/cgpa_engine.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/gradient_button.dart';
 import '../../../shared/widgets/gradient_scaffold.dart';
 import '../providers/onboarding_provider.dart';
 
-class GpaRevealScreen extends ConsumerWidget {
+class GpaRevealScreen extends ConsumerStatefulWidget {
   const GpaRevealScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final computation = ref.watch(draftComputationProvider);
-    final draft = ref.watch(onboardingDraftProvider);
+  ConsumerState<GpaRevealScreen> createState() => _GpaRevealScreenState();
+}
 
-    if (computation == null) {
+class _GpaRevealScreenState extends ConsumerState<GpaRevealScreen> {
+  bool _checkedPersisted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // The onboarding draft lives only in memory and does not survive a
+    // reload. By the time this screen is reachable, `commitDraft()` has
+    // already persisted the semester via `academicRecordProvider` — so on a
+    // reload, wait for that reload to finish and fall back to the persisted
+    // copy instead of spinning forever on draft state that is gone for good.
+    if (ref.read(onboardingDraftProvider).committed != null) {
+      _checkedPersisted = true;
+    } else {
+      ref.read(academicRecordProvider.notifier).ready.then((_) {
+        if (mounted) setState(() => _checkedPersisted = true);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final draft = ref.watch(onboardingDraftProvider);
+    final record = ref.watch(academicRecordProvider);
+
+    final semester = draft.committed ??
+        (record.semesters.isNotEmpty ? record.semesters.last : null);
+    final scheme = draft.committed != null ? draft.scheme : record.scheme;
+
+    if (semester == null) {
+      if (_checkedPersisted) {
+        // Nothing was ever committed, on this boot or a previous one —
+        // there is nothing to review. Bounce back to entry instead of
+        // showing a spinner that will never resolve.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) context.go(Routes.addFirstResults);
+        });
+      }
       return const GradientScaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
+
+    final computation = CgpaEngine.computeSemester(
+      semester: semester,
+      scheme: scheme,
+    );
 
     return GradientScaffold(
       body: SafeArea(
@@ -82,8 +125,8 @@ class GpaRevealScreen extends ConsumerWidget {
                 title: const Text('Show the calculation'),
                 tilePadding: EdgeInsets.zero,
                 children: [
-                  ...draft.committed!.results.map((r) {
-                    final point = draft.scheme.pointForLetter(r.grade) ?? 0;
+                  ...semester.results.map((r) {
+                    final point = scheme.pointForLetter(r.grade) ?? 0;
                     return ListTile(
                       dense: true,
                       contentPadding: EdgeInsets.zero,

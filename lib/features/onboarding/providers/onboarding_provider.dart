@@ -10,7 +10,6 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../data/seed/nigerian_institutions.dart';
-import '../../../domain/engine/cgpa_engine.dart';
 import '../../../domain/models/course_result.dart';
 import '../../../domain/models/grading_scheme.dart';
 
@@ -199,15 +198,3 @@ final onboardingDraftProvider =
     StateNotifierProvider<OnboardingDraftNotifier, OnboardingDraft>(
   (ref) => OnboardingDraftNotifier(),
 );
-
-/// The computed GPA for the draft semester. Pure engine call, no network,
-/// no auth. This is the Act 1 payoff.
-final draftComputationProvider = Provider<SemesterComputation?>((ref) {
-  final draft = ref.watch(onboardingDraftProvider);
-  final semester = draft.committed;
-  if (semester == null) return null;
-  return CgpaEngine.computeSemester(
-    semester: semester,
-    scheme: draft.scheme,
-  );
-});
