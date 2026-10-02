@@ -6,7 +6,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_palette.dart';
 import '../providers/pin_provider.dart';
 import '../widgets/pin_pad.dart';
 
@@ -78,16 +78,16 @@ class _PinSetupSheetState extends ConsumerState<_PinSetupSheet> {
           const SizedBox(height: 12),
           Text(
             confirming ? 'Confirm your PIN' : 'Create a PIN',
-            style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
+            style: TextStyle(color: context.palette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
           Text(
             confirming ? 'Enter it once more to confirm.' : "You'll need this to open Perform+.",
-            style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13.5),
+            style: TextStyle(color: context.palette.secondaryText, fontSize: 13.5),
           ),
           if (_error != null) ...[
             const SizedBox(height: 8),
-            Text(_error!, style: const TextStyle(color: OnboardingLightPalette.error, fontSize: 13)),
+            Text(_error!, style: TextStyle(color: context.palette.error, fontSize: 13)),
           ],
           const SizedBox(height: 24),
           if (_saving)

@@ -33,7 +33,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -67,7 +66,7 @@ String _fmt(double v) => v.toStringAsFixed(2);
 ({Color color, IconData icon}) _badgeAppearance(BuildContext context, BadgeId id) => switch (id) {
       BadgeId.consistentLearner => (color: const Color(0xFFEA580C), icon: Icons.local_fire_department),
       BadgeId.topPerformer => (color: GpaRevealPalette.confettiAmber, icon: Icons.emoji_events),
-      BadgeId.improvementKing => (color: OnboardingLightPalette.success, icon: Icons.trending_up),
+      BadgeId.improvementKing => (color: context.palette.success, icon: Icons.trending_up),
       BadgeId.firstSteps => (color: context.palette.primary, icon: Icons.flag),
     };
 
@@ -218,7 +217,7 @@ class _MeShellState extends ConsumerState<MeShell> {
                     icon: Icons.notifications_outlined,
                     title: 'Notifications',
                     subtitle: 'Reminders, result alerts, streaks',
-                    onTap: () => _showNotificationSettingsSheet(context),
+                    onTap: () => showNotificationSettingsSheet(context),
                   ),
                   _Row(
                     icon: Icons.palette_outlined,
@@ -326,12 +325,12 @@ class _MeAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                   ),
                 ),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Me',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: OnboardingLightPalette.bodyText,
+                      color: context.palette.bodyText,
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
                     ),
@@ -452,14 +451,14 @@ class _IdentityCard extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             p?.fullName.trim().isNotEmpty == true ? p!.fullName : 'Add your profile',
-            style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 20, fontWeight: FontWeight.w700),
+            style: TextStyle(color: context.palette.bodyText, fontSize: 20, fontWeight: FontWeight.w700),
           ),
           if (p != null) ...[
             const SizedBox(height: 4),
             Text(
               '${p.department.trim().isNotEmpty ? p.department : (institution?.abbreviation ?? 'Independent')} · '
               '${p.currentLevel} ${institution?.levelNoun ?? 'Level'}',
-              style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14.5),
+              style: TextStyle(color: context.palette.secondaryText, fontSize: 14.5),
             ),
             const SizedBox(height: 16),
             if (email != null) _ContactRow(icon: Icons.mail_outline, text: email!, accent: accent),
@@ -548,7 +547,7 @@ class _ContactRow extends StatelessWidget {
       children: [
         Icon(icon, size: 16, color: accent),
         const SizedBox(width: 8),
-        Text(text, style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 14)),
+        Text(text, style: TextStyle(color: context.palette.bodyText, fontSize: 14)),
       ],
     );
   }
@@ -590,7 +589,7 @@ class _StatStrip extends StatelessWidget {
         border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: OnboardingLightPalette.bodyText.withValues(alpha: 0.05),
+            color: context.palette.bodyText.withValues(alpha: 0.05),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -611,7 +610,7 @@ class _StatStrip extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     cell.label,
-                    style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 12),
+                    style: TextStyle(color: context.palette.secondaryText, fontSize: 12),
                   ),
                 ],
               ),
@@ -670,7 +669,7 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: OnboardingLightPalette.bodyText.withValues(alpha: 0.04),
+            color: context.palette.bodyText.withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -738,7 +737,7 @@ class _Row extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                        color: titleColor ?? OnboardingLightPalette.bodyText,
+                        color: titleColor ?? context.palette.bodyText,
                         fontSize: 16.5,
                         fontWeight: FontWeight.w600,
                       ),
@@ -748,7 +747,7 @@ class _Row extends StatelessWidget {
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14),
+                      style: TextStyle(color: context.palette.secondaryText, fontSize: 14),
                     ),
                   ],
                 ),
@@ -757,13 +756,13 @@ class _Row extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
-                    color: OnboardingLightPalette.amber.withValues(alpha: 0.10),
+                    color: context.palette.amber.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     trailingChip!,
-                    style: const TextStyle(
-                      color: OnboardingLightPalette.amber,
+                    style: TextStyle(
+                      color: context.palette.amber,
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
                     ),
@@ -792,9 +791,9 @@ class _AchievementsGrid extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: OnboardingLightPalette.searchBorder, width: 1.2),
+        border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
       ),
       child: Row(
         children: [
@@ -835,8 +834,8 @@ class _AchievementCell extends StatelessWidget {
           badge.name,
           textAlign: TextAlign.center,
           maxLines: 2,
-          style: const TextStyle(
-            color: OnboardingLightPalette.bodyText,
+          style: TextStyle(
+            color: context.palette.bodyText,
             fontSize: 11.5,
             fontWeight: FontWeight.w600,
           ),
@@ -846,7 +845,7 @@ class _AchievementCell extends StatelessWidget {
           badge.criteria,
           textAlign: TextAlign.center,
           maxLines: 2,
-          style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 10.5),
+          style: TextStyle(color: context.palette.secondaryText, fontSize: 10.5),
         ),
       ],
     );
@@ -862,13 +861,13 @@ void _showEmailInfoSheet(BuildContext context, String email) {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sheetTitle('Email address'),
+        _sheetTitle(context, 'Email address'),
         const SizedBox(height: 8),
         Text(email, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
-        const Text(
+        Text(
           "Your email is tied to your account and can't be changed from here yet.",
-          style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14),
+          style: TextStyle(color: context.palette.secondaryText, fontSize: 14),
         ),
       ],
     ),
@@ -991,13 +990,13 @@ class _ChangePasswordFormState extends State<_ChangePasswordForm> {
           ),
         ),
         const SizedBox(height: 16),
-        Center(child: _sheetTitle('Change password')),
+        Center(child: _sheetTitle(context, 'Change password')),
         const SizedBox(height: 4),
-        const Center(
+        Center(
           child: Text(
             'Use at least 8 characters, with a mix of letters, numbers and symbols.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13.5),
+            style: TextStyle(color: context.palette.secondaryText, fontSize: 13.5),
           ),
         ),
         const SizedBox(height: 24),
@@ -1012,7 +1011,7 @@ class _ChangePasswordFormState extends State<_ChangePasswordForm> {
               onPressed: () => setState(() => _newObscured = !_newObscured),
             ),
             filled: true,
-            fillColor: OnboardingLightPalette.standingFill,
+            fillColor: context.palette.background,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
           ),
         ),
@@ -1026,7 +1025,7 @@ class _ChangePasswordFormState extends State<_ChangePasswordForm> {
                   child: LinearProgressIndicator(
                     value: _strength / 4,
                     minHeight: 5,
-                    backgroundColor: OnboardingLightPalette.divider,
+                    backgroundColor: context.palette.divider,
                     valueColor: AlwaysStoppedAnimation(_strengthLabel.color),
                   ),
                 ),
@@ -1051,7 +1050,7 @@ class _ChangePasswordFormState extends State<_ChangePasswordForm> {
               onPressed: () => setState(() => _confirmObscured = !_confirmObscured),
             ),
             filled: true,
-            fillColor: OnboardingLightPalette.standingFill,
+            fillColor: context.palette.background,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
           ),
         ),
@@ -1060,15 +1059,15 @@ class _ChangePasswordFormState extends State<_ChangePasswordForm> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: OnboardingLightPalette.error.withValues(alpha: 0.08),
+              color: context.palette.error.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
-                const Icon(Icons.error_outline, size: 18, color: OnboardingLightPalette.error),
+                Icon(Icons.error_outline, size: 18, color: context.palette.error),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(_error!, style: const TextStyle(color: OnboardingLightPalette.error, fontSize: 13.5)),
+                  child: Text(_error!, style: TextStyle(color: context.palette.error, fontSize: 13.5)),
                 ),
               ],
             ),
@@ -1114,11 +1113,11 @@ void _showInstitutionSheet(BuildContext context, WidgetRef ref) {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _sheetTitle('Institution'),
+              _sheetTitle(context, 'Institution'),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 "Changing your institution recalculates your CGPA under a different scheme.",
-                style: TextStyle(color: OnboardingLightPalette.amber, fontSize: 13.5),
+                style: TextStyle(color: context.palette.amber, fontSize: 13.5),
               ),
               const SizedBox(height: 12),
               Flexible(
@@ -1279,24 +1278,24 @@ class _GradingSchemeSheetState extends State<_GradingSchemeSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _sheetTitle('Grading scheme'),
+              _sheetTitle(context, 'Grading scheme'),
               const SizedBox(height: 4),
               Text(scheme.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               Text(
                 'Max point ${_fmt(scheme.maxPoint)}',
-                style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14),
+                style: TextStyle(color: context.palette.secondaryText, fontSize: 14),
               ),
               if (!scheme.isVerified) ...[
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: OnboardingLightPalette.amber.withValues(alpha: 0.1),
+                    color: context.palette.amber.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text(
+                  child: Text(
                     "This grading scheme hasn't been confirmed against the official policy yet.",
-                    style: TextStyle(color: OnboardingLightPalette.amber, fontSize: 13),
+                    style: TextStyle(color: context.palette.amber, fontSize: 13),
                   ),
                 ),
               ],
@@ -1305,7 +1304,7 @@ class _GradingSchemeSheetState extends State<_GradingSchemeSheet> {
               const SizedBox(height: 6),
               Text(
                 scheme.grades.map((g) => '${g.letter} ${g.point.toStringAsFixed(1)} (${g.minScore}–${g.maxScore})').join('  ·  '),
-                style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13.5),
+                style: TextStyle(color: context.palette.secondaryText, fontSize: 13.5),
               ),
               const SizedBox(height: 16),
               const Text('Classification bands', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
@@ -1314,7 +1313,7 @@ class _GradingSchemeSheetState extends State<_GradingSchemeSheet> {
                 scheme.classifications
                     .map((c) => '${c.shortLabel} ${_fmt(c.minCgpa)}–${_fmt(c.maxCgpa)}')
                     .join('  ·  '),
-                style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13.5),
+                style: TextStyle(color: context.palette.secondaryText, fontSize: 13.5),
               ),
               const SizedBox(height: 20),
               const Text('Repeat / carryover policy', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
@@ -1402,7 +1401,7 @@ class _YearsFormState extends State<_YearsForm> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sheetTitle('Entry and graduation year'),
+          _sheetTitle(context, 'Entry and graduation year'),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -1431,7 +1430,7 @@ class _YearsFormState extends State<_YearsForm> {
           const SizedBox(height: 12),
           Text(
             "That's $remaining semester${remaining == 1 ? '' : 's'} remaining.",
-            style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14),
+            style: TextStyle(color: context.palette.secondaryText, fontSize: 14),
           ),
           const SizedBox(height: 20),
           SizedBox(
@@ -1518,8 +1517,8 @@ void _showAppLockSheet(BuildContext context, WidgetRef ref, bool isSet) {
           const Divider(height: 1, color: Color(0xFFECECF1)),
           ListTile(
             key: const ValueKey('turnOffPinTap'),
-            leading: const Icon(Icons.lock_open_outlined, color: OnboardingLightPalette.error),
-            title: const Text('Turn off PIN lock', style: TextStyle(color: OnboardingLightPalette.error)),
+            leading: Icon(Icons.lock_open_outlined, color: context.palette.error),
+            title: Text('Turn off PIN lock', style: TextStyle(color: context.palette.error)),
             onTap: () {
               Navigator.of(sheetContext).pop();
               _verifyPinThenAct(
@@ -1557,7 +1556,7 @@ void _showAutoLockPicker(BuildContext context, WidgetRef ref, int current) {
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 8),
-          _sheetTitle('Lock after'),
+          _sheetTitle(context, 'Lock after'),
           const SizedBox(height: 4),
           for (final minutes in _autoLockOptions)
             ListTile(
@@ -1596,10 +1595,10 @@ void _verifyPinThenAct(BuildContext context, WidgetRef ref, {required Future<voi
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _sheetTitle('Enter your current PIN'),
+              _sheetTitle(context, 'Enter your current PIN'),
               if (wrong) ...[
                 const SizedBox(height: 8),
-                const Text('Incorrect PIN.', style: TextStyle(color: OnboardingLightPalette.error, fontSize: 13)),
+                Text('Incorrect PIN.', style: TextStyle(color: context.palette.error, fontSize: 13)),
               ],
               const SizedBox(height: 20),
               PinPad(
@@ -1623,28 +1622,6 @@ void _verifyPinThenAct(BuildContext context, WidgetRef ref, {required Future<voi
   );
 }
 
-void _showNotificationSettingsSheet(BuildContext context) {
-  _showSheet(
-    context,
-    Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sheetTitle('Notifications'),
-        const SizedBox(height: 12),
-        const Text(
-          'Result, CGPA and streak alerts are controlled by your system notification permission.',
-          style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(onPressed: openAppSettings, child: const Text('Open system settings')),
-        ),
-      ],
-    ),
-  );
-}
 
 void _showStorageSheet(BuildContext context, WidgetRef ref) {
   showModalBottomSheet(
@@ -1690,7 +1667,7 @@ class _StorageSheet extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _sheetTitle('Storage'),
+              _sheetTitle(context, 'Storage'),
               const SizedBox(height: 12),
               Flexible(
                 child: ListView.builder(
@@ -1714,9 +1691,9 @@ class _StorageSheet extends ConsumerWidget {
                 ),
               ),
               if (notes.isEmpty)
-                const Text(
+                Text(
                   'No notes uploaded yet.',
-                  style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14),
+                  style: TextStyle(color: context.palette.secondaryText, fontSize: 14),
                 ),
             ],
           ),
@@ -1790,13 +1767,13 @@ void _showPrivacyPolicySheet(BuildContext context) {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sheetTitle('Privacy policy'),
+        _sheetTitle(context, 'Privacy policy'),
         const SizedBox(height: 12),
-        const Text(
+        Text(
           "${AppConstants.appName} doesn't have a hosted privacy policy yet -- TODO(v1) before release. "
           'For now: your results, notes and photo are stored on this device. Your name and email leave '
           "this device only through your Supabase account; nothing else is uploaded.",
-          style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14, height: 1.5),
+          style: TextStyle(color: context.palette.secondaryText, fontSize: 14, height: 1.5),
         ),
       ],
     ),
@@ -1816,7 +1793,7 @@ class _DestructiveSection extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 26, 20, 0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFDC2626).withValues(alpha: 0.30), width: 1.5),
       ),
@@ -1876,10 +1853,10 @@ void _showDeleteAccountDialog(
                 "It cannot be undone.",
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 "We can't yet remove your account from our servers automatically -- contact support "
                 'to finish that step. This deletes everything on this device now and signs you out.',
-                style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 12.5),
+                style: TextStyle(color: context.palette.secondaryText, fontSize: 12.5),
               ),
               const SizedBox(height: 12),
               TextButton(
@@ -1983,23 +1960,23 @@ void _showFaqSheet(BuildContext context) {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _sheetTitle('Help and support'),
+              _sheetTitle(context, 'Help and support'),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Frequently asked questions',
-                style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14),
+                style: TextStyle(color: context.palette.secondaryText, fontSize: 14),
               ),
               const SizedBox(height: 16),
               for (var i = 0; i < _faqItems.length; i++) ...[
                 if (i > 0) const Divider(height: 24, color: Color(0xFFECECF1)),
                 Text(
                   _faqItems[i].question,
-                  style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 15.5, fontWeight: FontWeight.w700),
+                  style: TextStyle(color: context.palette.bodyText, fontSize: 15.5, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   _faqItems[i].answer,
-                  style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14, height: 1.5),
+                  style: TextStyle(color: context.palette.secondaryText, fontSize: 14, height: 1.5),
                 ),
               ],
               const SizedBox(height: 24),
@@ -2012,15 +1989,15 @@ void _showFaqSheet(BuildContext context) {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Still stuck?",
-                      style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 15, fontWeight: FontWeight.w700),
+                      style: TextStyle(color: context.palette.bodyText, fontSize: 15, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       "For anything specific to your own numbers, ask the Advisor -- it can walk through "
                       'your actual record.',
-                      style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13.5),
+                      style: TextStyle(color: context.palette.secondaryText, fontSize: 13.5),
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
@@ -2057,28 +2034,28 @@ void _showAboutSheet(BuildContext context) {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _sheetTitle('About ${AppConstants.appName}'),
+            _sheetTitle(context, 'About ${AppConstants.appName}'),
             const SizedBox(height: 4),
             Text(
               'Version $version',
-              style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13),
+              style: TextStyle(color: context.palette.secondaryText, fontSize: 13),
             ),
             const SizedBox(height: 14),
-            const Text(
+            Text(
               '${AppConstants.appName} helps Nigerian university students track their CGPA, understand '
               'exactly how it was calculated, and plan realistically toward a target classification.',
-              style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 14.5, height: 1.5),
+              style: TextStyle(color: context.palette.bodyText, fontSize: 14.5, height: 1.5),
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               "Every number you see is computed from your own results under your institution's grading "
               'scheme -- never estimated, never guessed, and never left to an AI model to calculate.',
-              style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14, height: 1.5),
+              style: TextStyle(color: context.palette.secondaryText, fontSize: 14, height: 1.5),
             ),
             const SizedBox(height: 14),
-            const Text(
+            Text(
               AppConstants.tagline,
-              style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13.5, fontStyle: FontStyle.italic),
+              style: TextStyle(color: context.palette.secondaryText, fontSize: 13.5, fontStyle: FontStyle.italic),
             ),
           ],
         );
@@ -2098,7 +2075,7 @@ Future<void> _showSheet(BuildContext context, Widget child) => showModalBottomSh
       builder: (_) => Padding(padding: const EdgeInsets.all(24), child: child),
     );
 
-Widget _sheetTitle(String text) => Text(
+Widget _sheetTitle(BuildContext context, String text) => Text(
       text,
-      style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
+      style: TextStyle(color: context.palette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
     );

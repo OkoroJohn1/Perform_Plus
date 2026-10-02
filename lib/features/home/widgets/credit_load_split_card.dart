@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/engine/cgpa_engine.dart';
 import '../../../domain/models/course_result.dart';
@@ -26,13 +27,13 @@ _GradeBucket _bucketFor(String letter) => switch (letter.trim().toUpperCase()) {
     };
 
 extension _BucketPresentation on _GradeBucket {
-  Color get color => switch (this) {
+  Color colorFor(AppPalette palette) => switch (this) {
         _GradeBucket.firstClass => ClassificationPalette.gradeA,
         _GradeBucket.upperSecond => ClassificationPalette.gradeB,
         _GradeBucket.lowerSecond => ClassificationPalette.gradeC,
         _GradeBucket.below => ClassificationPalette.gradeBelow,
         _GradeBucket.failed => ClassificationPalette.gradeFailed,
-        _GradeBucket.other => OnboardingLightPalette.secondaryText,
+        _GradeBucket.other => palette.secondaryText,
       };
 }
 
@@ -81,14 +82,14 @@ class CreditLoadSplitCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: context.palette.surface, borderRadius: BorderRadius.circular(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Where your credits sit',
             style: TextStyle(
-              color: OnboardingLightPalette.bodyText,
+              color: context.palette.bodyText,
               fontSize: 19,
               fontWeight: FontWeight.w700,
             ),
@@ -104,7 +105,7 @@ class CreditLoadSplitCard extends StatelessWidget {
                     if (totalUnits > 0)
                       Expanded(
                         flex: entry.value,
-                        child: ColoredBox(color: entry.key.color),
+                        child: ColoredBox(color: entry.key.colorFor(context.palette)),
                       ),
                 ],
               ),
@@ -123,14 +124,14 @@ class CreditLoadSplitCard extends StatelessWidget {
                       width: 10,
                       height: 10,
                       decoration: BoxDecoration(
-                        color: _bucketFor(l.letter).color,
+                        color: _bucketFor(l.letter).colorFor(context.palette),
                         shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       '${l.units} units at ${l.letter}',
-                      style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13),
+                      style: TextStyle(color: context.palette.secondaryText, fontSize: 13),
                     ),
                   ],
                 ),

@@ -117,12 +117,12 @@ class _AcademicsAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                   ),
                 ),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Academics',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: OnboardingLightPalette.bodyText,
+                      color: context.palette.bodyText,
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
                     ),
@@ -163,8 +163,8 @@ class _NotificationBell extends ConsumerWidget {
               child: Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(
-                  color: OnboardingLightPalette.error,
+                decoration: BoxDecoration(
+                  color: context.palette.error,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -199,9 +199,9 @@ class _AcademicsSegmentedControl extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: OnboardingLightPalette.searchBorder, width: 1.2),
+        border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -258,7 +258,7 @@ class _Segment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? Colors.white : OnboardingLightPalette.secondaryText;
+    final color = selected ? Colors.white : context.palette.secondaryText;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,

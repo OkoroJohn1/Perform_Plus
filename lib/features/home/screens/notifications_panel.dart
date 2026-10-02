@@ -21,6 +21,7 @@ import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/repositories/notification_provider.dart';
 import '../../../domain/models/app_notification.dart';
+import '../../../shared/widgets/quick_settings_sheets.dart';
 import '../services/notification_permission_service.dart';
 import '../widgets/notification_bell_illustration.dart';
 
@@ -141,12 +142,21 @@ class _NotificationsPanelState extends ConsumerState<NotificationsPanel> {
       value: SystemUiOverlayStyle.dark,
       child: Scaffold(
         backgroundColor: context.palette.background,
-        appBar: _NotificationsAppBar(onSettingsTap: () {}),
+        appBar: _NotificationsAppBar(onSettingsTap: () => showNotificationSettingsSheet(context)),
         body: SafeArea(
           top: false,
           child: ListView(
             padding: const EdgeInsets.only(top: 16, bottom: 24),
             children: [
+              Center(
+                child: NotificationBellIllustration(
+                  unreadCount: unreadCount,
+                  accent: context.palette.primary,
+                  accentGradientStart: context.palette.primaryGradientStart,
+                  accentDark: context.palette.primaryGradientEnd,
+                ),
+              ),
+              const SizedBox(height: 8),
               _SegmentedTabs(
                 tab: _tab,
                 unreadCount: unreadCount,
@@ -157,10 +167,10 @@ class _NotificationsPanelState extends ConsumerState<NotificationsPanel> {
               // future ones actually arrive.
               if (_permissionGranted == false) ...[
                 const SizedBox(height: 20),
-                _PermissionHeroBanner(unreadCount: unreadCount, onTurnOn: _requestPermission),
+                _PermissionHeroBanner(onTurnOn: _requestPermission),
               ],
               if (notifications.isEmpty)
-                _EmptyAll(bellCount: unreadCount)
+                const _EmptyAll()
               else if (visible.isEmpty)
                 const _EmptyUnread()
               else
@@ -171,8 +181,8 @@ class _NotificationsPanelState extends ConsumerState<NotificationsPanel> {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Text(
                         _groupTitle(group),
-                        style: const TextStyle(
-                          color: OnboardingLightPalette.bodyText,
+                        style: TextStyle(
+                          color: context.palette.bodyText,
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
                         ),
@@ -224,12 +234,12 @@ class _NotificationsAppBar extends StatelessWidget implements PreferredSizeWidge
                     onPressed: () => Navigator.of(context).maybePop(),
                   ),
                 ),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Notifications',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: OnboardingLightPalette.bodyText,
+                      color: context.palette.bodyText,
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
                     ),
@@ -266,9 +276,9 @@ class _SegmentedTabs extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: OnboardingLightPalette.searchBorder, width: 1.2),
+        border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -326,7 +336,7 @@ class _TabLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? Colors.white : OnboardingLightPalette.secondaryText;
+    final color = selected ? Colors.white : context.palette.secondaryText;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -360,10 +370,9 @@ class _TabLabel extends StatelessWidget {
 }
 
 class _PermissionHeroBanner extends StatelessWidget {
-  final int unreadCount;
   final VoidCallback onTurnOn;
 
-  const _PermissionHeroBanner({required this.unreadCount, required this.onTurnOn});
+  const _PermissionHeroBanner({required this.onTurnOn});
 
   @override
   Widget build(BuildContext context) {
@@ -374,7 +383,7 @@ class _PermissionHeroBanner extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: const LinearGradient(colors: [Color(0xFFF1EFFE), Color(0xFFFAF9FF)]),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: OnboardingLightPalette.searchBorder, width: 1.2),
+        border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -384,14 +393,14 @@ class _PermissionHeroBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Stay updated',
-                  style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 23, fontWeight: FontWeight.w700),
+                  style: TextStyle(color: context.palette.bodyText, fontSize: 23, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   "Turn on notifications so you don't miss result reminders.",
-                  style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 15.5),
+                  style: TextStyle(color: context.palette.secondaryText, fontSize: 15.5),
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
@@ -419,7 +428,9 @@ class _PermissionHeroBanner extends StatelessWidget {
           ),
           Expanded(
             flex: 2,
-            child: Center(child: NotificationBellIllustration(unreadCount: unreadCount)),
+            child: Center(
+              child: Icon(Icons.notifications_none_rounded, size: 56, color: context.palette.primary),
+            ),
           ),
         ],
       ),
@@ -438,8 +449,8 @@ class _SectionCard extends ConsumerWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: OnboardingLightPalette.searchBorder, width: 1.2),
+        color: context.palette.surface,
+        border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -517,14 +528,14 @@ class _NotificationRow extends ConsumerWidget {
                       notification.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 16.5, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: context.palette.bodyText, fontSize: 16.5, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       notification.body,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14.5),
+                      style: TextStyle(color: context.palette.secondaryText, fontSize: 14.5),
                     ),
                   ],
                 ),
@@ -536,7 +547,7 @@ class _NotificationRow extends ConsumerWidget {
                   children: [
                     Text(
                       _timestampFor(notification.createdAt, now),
-                      style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13),
+                      style: TextStyle(color: context.palette.secondaryText, fontSize: 13),
                     ),
                     const SizedBox(height: 10),
                     Container(
@@ -610,9 +621,7 @@ class _MarkAllReadButtonState extends ConsumerState<_MarkAllReadButton> {
 }
 
 class _EmptyAll extends StatelessWidget {
-  final int bellCount;
-
-  const _EmptyAll({required this.bellCount});
+  const _EmptyAll();
 
   @override
   Widget build(BuildContext context) {
@@ -621,19 +630,23 @@ class _EmptyAll extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Opacity(opacity: 0.4, child: NotificationBellIllustration(unreadCount: bellCount)),
+          // No second bell illustration here -- the big one above the
+          // segmented tabs is already always on screen, including this
+          // empty state; a near-identical one directly below it would just
+          // be the same picture twice.
+          Icon(Icons.inbox_outlined, size: 48, color: context.palette.emptyIcon),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'Nothing yet',
-            style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 19, fontWeight: FontWeight.w600),
+            style: TextStyle(color: context.palette.bodyText, fontSize: 19, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 280),
-            child: const Text(
+            child: Text(
               "We'll tell you when your CGPA changes or a streak is at risk.",
               textAlign: TextAlign.center,
-              style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 15.5),
+              style: TextStyle(color: context.palette.secondaryText, fontSize: 15.5),
             ),
           ),
         ],
@@ -647,19 +660,19 @@ class _EmptyUnread extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.only(top: 60),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Opacity(
             opacity: 0.5,
-            child: Icon(Icons.check_circle_outline, size: 44, color: OnboardingLightPalette.success),
+            child: Icon(Icons.check_circle_outline, size: 44, color: context.palette.success),
           ),
           SizedBox(height: 16),
           Text(
             "You're all caught up",
-            style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 18, fontWeight: FontWeight.w600),
+            style: TextStyle(color: context.palette.bodyText, fontSize: 18, fontWeight: FontWeight.w600),
           ),
         ],
       ),

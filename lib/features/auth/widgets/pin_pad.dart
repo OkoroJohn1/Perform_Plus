@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_palette.dart';
-import '../../../core/theme/app_theme.dart';
 import '../services/pin_service.dart';
 
 class PinPadController extends ChangeNotifier {
@@ -121,7 +120,7 @@ class _PinPadState extends State<PinPad> {
               height: 64,
               child: IconButton(
                 icon: const Icon(Icons.backspace_outlined),
-                color: OnboardingLightPalette.secondaryText,
+                color: context.palette.secondaryText,
                 onPressed: _backspace,
               ),
             ),
@@ -143,7 +142,7 @@ class _PinKey extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Material(
-        color: OnboardingLightPalette.standingFill,
+        color: context.palette.background,
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),
@@ -154,7 +153,7 @@ class _PinKey extends StatelessWidget {
             child: Center(
               child: Text(
                 label,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: OnboardingLightPalette.bodyText),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: context.palette.bodyText),
               ),
             ),
           ),

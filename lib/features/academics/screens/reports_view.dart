@@ -16,7 +16,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_palette.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../data/repositories/academic_record_provider.dart';
 
 class ReportsView extends ConsumerWidget {
@@ -37,10 +36,10 @@ class ReportsView extends ConsumerWidget {
       children: [
         Row(
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
                 'Reports',
-                style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 22, fontWeight: FontWeight.w700),
+                style: TextStyle(color: context.palette.bodyText, fontSize: 22, fontWeight: FontWeight.w700),
               ),
             ),
             _GenerateReportButton(
@@ -51,9 +50,9 @@ class ReportsView extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'A plain-language summary of your record',
-          style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14.5),
+          style: TextStyle(color: context.palette.secondaryText, fontSize: 14.5),
         ),
         const SizedBox(height: 20),
         _ReportCard(
@@ -70,7 +69,7 @@ class ReportsView extends ConsumerWidget {
         const SizedBox(height: 16),
         _ReportCard(
           icon: Icons.bar_chart_outlined,
-          iconColor: OnboardingLightPalette.success,
+          iconColor: context.palette.success,
           title: 'Semester Analysis',
           subtitle: 'Detailed semester breakdown',
           rows: [
@@ -82,8 +81,8 @@ class ReportsView extends ConsumerWidget {
         _ReportCard(
           icon: trend == null ? Icons.timeline_outlined : (trend >= 0 ? Icons.trending_up : Icons.trending_down),
           iconColor: trend == null
-              ? OnboardingLightPalette.secondaryText
-              : (trend >= 0 ? OnboardingLightPalette.success : OnboardingLightPalette.amber),
+              ? context.palette.secondaryText
+              : (trend >= 0 ? context.palette.success : context.palette.amber),
           title: 'Performance Over Time',
           subtitle: 'Trends and improvements',
           rows: [
@@ -159,7 +158,7 @@ class _ReportCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: context.palette.surface, borderRadius: BorderRadius.circular(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -183,12 +182,12 @@ class _ReportCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 16.5, fontWeight: FontWeight.w700),
+                      style: TextStyle(color: context.palette.bodyText, fontSize: 16.5, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13),
+                      style: TextStyle(color: context.palette.secondaryText, fontSize: 13),
                     ),
                   ],
                 ),
@@ -203,12 +202,12 @@ class _ReportCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(rows[i].label, style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14)),
+                Text(rows[i].label, style: TextStyle(color: context.palette.secondaryText, fontSize: 14)),
                 Flexible(
                   child: Text(
                     rows[i].value,
                     textAlign: TextAlign.right,
-                    style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 14.5, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: context.palette.bodyText, fontSize: 14.5, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -232,9 +231,9 @@ class _LockedReportRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: OnboardingLightPalette.searchBorder, width: 1.2),
+        border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
       ),
       child: Opacity(
         opacity: 0.6,
@@ -245,30 +244,30 @@ class _LockedReportRow extends StatelessWidget {
               height: 40,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: OnboardingLightPalette.secondaryText.withValues(alpha: 0.10),
+                color: context.palette.secondaryText.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, size: 19, color: OnboardingLightPalette.secondaryText),
+              child: Icon(icon, size: 19, color: context.palette.secondaryText),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 15, fontWeight: FontWeight.w600)),
-                  Text(subtitle, style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 12.5)),
+                  Text(title, style: TextStyle(color: context.palette.bodyText, fontSize: 15, fontWeight: FontWeight.w600)),
+                  Text(subtitle, style: TextStyle(color: context.palette.secondaryText, fontSize: 12.5)),
                 ],
               ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: OnboardingLightPalette.secondaryText.withValues(alpha: 0.12),
+                color: context.palette.secondaryText.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(999),
               ),
-              child: const Text(
+              child: Text(
                 'V2',
-                style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 11.5, fontWeight: FontWeight.w700),
+                style: TextStyle(color: context.palette.secondaryText, fontSize: 11.5, fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -291,15 +290,15 @@ class _EmptyReports extends StatelessWidget {
           children: [
             const Icon(Icons.description_outlined, size: 48, color: Color(0xFFD1D5DB)),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'No reports yet',
-              style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 18, fontWeight: FontWeight.w600),
+              style: TextStyle(color: context.palette.bodyText, fontSize: 18, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Add results to generate an academic summary.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 15.5),
+              style: TextStyle(color: context.palette.secondaryText, fontSize: 15.5),
             ),
           ],
         ),

@@ -9,6 +9,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/engine/cgpa_engine.dart';
 import '../../../domain/models/course_result.dart';
@@ -46,7 +47,7 @@ class _Trend3DChartState extends State<Trend3DChart> with SingleTickerProviderSt
 
   Color _colorFor(double gpa) {
     final band = widget.scheme.classify(gpa);
-    if (band == null) return OnboardingLightPalette.secondaryText;
+    if (band == null) return context.palette.secondaryText;
     final index = widget.scheme.bandsDescending.indexWhere((b) => b.label == band.label);
     return ClassificationPalette.colorForBandIndex(index);
   }
@@ -67,22 +68,22 @@ class _Trend3DChartState extends State<Trend3DChart> with SingleTickerProviderSt
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: context.palette.surface, borderRadius: BorderRadius.circular(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Performance View',
             style: TextStyle(
-              color: OnboardingLightPalette.bodyText,
+              color: context.palette.bodyText,
               fontSize: 19,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 2),
-          const Text(
+          Text(
             'Each semester\'s GPA, block by block',
-            style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13),
+            style: TextStyle(color: context.palette.secondaryText, fontSize: 13),
           ),
           const SizedBox(height: 18),
           AnimatedBuilder(
@@ -96,6 +97,7 @@ class _Trend3DChartState extends State<Trend3DChart> with SingleTickerProviderSt
                   maxPoint: maxPoint,
                   colorFor: _colorFor,
                   grow: _grow.value,
+                  labelColor: context.palette.bodyText,
                 ),
               ),
             ),
@@ -110,7 +112,7 @@ class _Trend3DChartState extends State<Trend3DChart> with SingleTickerProviderSt
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 11),
+                    style: TextStyle(color: context.palette.secondaryText, fontSize: 11),
                   ),
                 ),
             ],
@@ -126,6 +128,7 @@ class _Bars3DPainter extends CustomPainter {
   final double maxPoint;
   final Color Function(double gpa) colorFor;
   final double grow;
+  final Color labelColor;
 
   static const _depth = 9.0;
   static const _labelSpace = 22.0;
@@ -135,6 +138,7 @@ class _Bars3DPainter extends CustomPainter {
     required this.maxPoint,
     required this.colorFor,
     required this.grow,
+    required this.labelColor,
   });
 
   @override
@@ -197,7 +201,7 @@ class _Bars3DPainter extends CustomPainter {
         text: TextSpan(
           text: _fmt(comp.gpa),
           style: TextStyle(
-            color: OnboardingLightPalette.bodyText.withValues(alpha: grow),
+            color: labelColor.withValues(alpha: grow),
             fontSize: 11.5,
             fontWeight: FontWeight.w700,
           ),
@@ -212,7 +216,9 @@ class _Bars3DPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _Bars3DPainter oldDelegate) =>
-      oldDelegate.grow != grow || oldDelegate.semesters != semesters;
+      oldDelegate.grow != grow ||
+      oldDelegate.semesters != semesters ||
+      oldDelegate.labelColor != labelColor;
 }
 
 class _Trend3DPlaceholder extends StatelessWidget {
@@ -223,13 +229,13 @@ class _Trend3DPlaceholder extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-      child: const Column(
+      decoration: BoxDecoration(color: context.palette.surface, borderRadius: BorderRadius.circular(20)),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Performance View',
-            style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
+            style: TextStyle(color: context.palette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
           ),
           SizedBox(height: 16),
           Center(
@@ -243,7 +249,7 @@ class _Trend3DPlaceholder extends StatelessWidget {
                   Text(
                     'Add one more semester to see this view',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 15),
+                    style: TextStyle(color: context.palette.secondaryText, fontSize: 15),
                   ),
                 ],
               ),

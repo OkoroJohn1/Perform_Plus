@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/engine/projection_solver.dart';
 
@@ -42,8 +43,8 @@ class RequiredPaceStrip extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: OnboardingLightPalette.searchBorder, width: 1.2),
+        color: context.palette.surface,
+        border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -56,16 +57,16 @@ class RequiredPaceStrip extends StatelessWidget {
               children: [
                 Text(
                   'Average ${_fmt(required)} per semester',
-                  style: const TextStyle(
-                    color: OnboardingLightPalette.bodyText,
+                  style: TextStyle(
+                    color: context.palette.bodyText,
                     fontSize: 16.5,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   'for $n more semester${n == 1 ? '' : 's'} to reach $bandShortLabel',
-                  style: const TextStyle(
-                    color: OnboardingLightPalette.secondaryText,
+                  style: TextStyle(
+                    color: context.palette.secondaryText,
                     fontSize: 14.5,
                   ),
                 ),

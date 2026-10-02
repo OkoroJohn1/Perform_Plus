@@ -1,13 +1,15 @@
-/// Appearance (Light/Dark/System) and Theme colour picker sheets — shared
-/// between the Me tab's App section and the quick-access rows in
-/// [AppDrawer] (`app_drawer.dart`) so there is exactly one implementation
-/// of each, not a duplicate copy per screen that could drift apart.
+/// Appearance (Light/Dark/System), Theme colour and Notifications sheets —
+/// shared between the Me tab's App section, the quick-access rows in
+/// [AppDrawer] (`app_drawer.dart`), and the Notifications panel's own
+/// settings icon, so there is exactly one implementation of each, not a
+/// duplicate copy per screen that could drift apart.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/theme/theme_accent_provider.dart';
 import '../../core/theme/theme_mode_provider.dart';
 
@@ -17,15 +19,15 @@ String themeModeLabel(ThemeMode mode) => switch (mode) {
       ThemeMode.system => 'System',
     };
 
-Widget quickSettingsSheetTitle(String text) => Text(
+Widget quickSettingsSheetTitle(BuildContext context, String text) => Text(
       text,
-      style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
+      style: TextStyle(color: context.palette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
     );
 
 void showAppearanceSheet(BuildContext context, WidgetRef ref, ThemeMode current) {
   showModalBottomSheet(
     context: context,
-    backgroundColor: Colors.white,
+    backgroundColor: context.palette.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (sheetContext) => Padding(
       padding: const EdgeInsets.all(24),
@@ -33,11 +35,11 @@ void showAppearanceSheet(BuildContext context, WidgetRef ref, ThemeMode current)
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          quickSettingsSheetTitle('Appearance'),
+          quickSettingsSheetTitle(context, 'Appearance'),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'System follows your device setting; Light and Dark are fixed regardless of it.',
-            style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13),
+            style: TextStyle(color: context.palette.secondaryText, fontSize: 13),
           ),
           const SizedBox(height: 8),
           for (final mode in ThemeMode.values)
@@ -61,7 +63,7 @@ void showAppearanceSheet(BuildContext context, WidgetRef ref, ThemeMode current)
 void showThemeColorSheet(BuildContext context, WidgetRef ref, AppAccent current) {
   showModalBottomSheet(
     context: context,
-    backgroundColor: Colors.white,
+    backgroundColor: context.palette.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (sheetContext) => Padding(
       padding: const EdgeInsets.all(24),
@@ -69,7 +71,7 @@ void showThemeColorSheet(BuildContext context, WidgetRef ref, AppAccent current)
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          quickSettingsSheetTitle('Theme colour'),
+          quickSettingsSheetTitle(context, 'Theme colour'),
           const SizedBox(height: 16),
           Wrap(
             spacing: 16,
@@ -85,6 +87,34 @@ void showThemeColorSheet(BuildContext context, WidgetRef ref, AppAccent current)
                   },
                 ),
             ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+void showNotificationSettingsSheet(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: context.palette.surface,
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    builder: (sheetContext) => Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          quickSettingsSheetTitle(context, 'Notifications'),
+          const SizedBox(height: 12),
+          Text(
+            'Result, CGPA and streak alerts are controlled by your system notification permission.',
+            style: TextStyle(color: context.palette.secondaryText, fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(onPressed: openAppSettings, child: const Text('Open system settings')),
           ),
         ],
       ),
@@ -117,7 +147,7 @@ class _AccentSwatch extends StatelessWidget {
               decoration: BoxDecoration(
                 color: accent.primary,
                 shape: BoxShape.circle,
-                border: selected ? Border.all(color: OnboardingLightPalette.bodyText, width: 2.5) : null,
+                border: selected ? Border.all(color: context.palette.bodyText, width: 2.5) : null,
               ),
               child: selected ? const Icon(Icons.check, color: Colors.white) : null,
             ),

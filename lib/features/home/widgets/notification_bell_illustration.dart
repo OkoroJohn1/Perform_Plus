@@ -1,7 +1,10 @@
 /// The notification panel's hero-banner bell — a [CustomPainter], not an
 /// asset. Rocks gently on a periodic chime rather than constant motion,
 /// and shows the actual unread count on its badge (never a decorative
-/// placeholder number).
+/// placeholder number). Its body gradient follows the student's chosen
+/// theme accent (`context.palette.primary`/`.primaryGradientStart`) rather
+/// than a fixed purple, so switching the Theme colour picker actually
+/// changes it.
 library;
 
 import 'dart:math' as math;
@@ -10,8 +13,17 @@ import 'package:flutter/material.dart';
 
 class NotificationBellIllustration extends StatefulWidget {
   final int unreadCount;
+  final Color accent;
+  final Color accentGradientStart;
+  final Color accentDark;
 
-  const NotificationBellIllustration({super.key, required this.unreadCount});
+  const NotificationBellIllustration({
+    super.key,
+    required this.unreadCount,
+    required this.accent,
+    required this.accentGradientStart,
+    required this.accentDark,
+  });
 
   @override
   State<NotificationBellIllustration> createState() => _NotificationBellIllustrationState();
@@ -55,7 +67,13 @@ class _NotificationBellIllustrationState extends State<NotificationBellIllustrat
       animation: _controller,
       builder: (context, _) => CustomPaint(
         size: const Size(120, 120),
-        painter: _BellPainter(t: _controller.value, unreadCount: widget.unreadCount),
+        painter: _BellPainter(
+          t: _controller.value,
+          unreadCount: widget.unreadCount,
+          accent: widget.accent,
+          accentGradientStart: widget.accentGradientStart,
+          accentDark: widget.accentDark,
+        ),
       ),
     );
   }
@@ -64,8 +82,17 @@ class _NotificationBellIllustrationState extends State<NotificationBellIllustrat
 class _BellPainter extends CustomPainter {
   final double t;
   final int unreadCount;
+  final Color accent;
+  final Color accentGradientStart;
+  final Color accentDark;
 
-  const _BellPainter({required this.t, required this.unreadCount});
+  const _BellPainter({
+    required this.t,
+    required this.unreadCount,
+    required this.accent,
+    required this.accentGradientStart,
+    required this.accentDark,
+  });
 
   /// 1600ms of an easeInOut rock, then a 3000ms pause, over the full
   /// 4600ms cycle — [t] is that cycle's 0..1 progress.
@@ -89,10 +116,10 @@ class _BellPainter extends CustomPainter {
     canvas.rotate(_rockAngleDegrees * math.pi / 180);
     canvas.translate(-pivot.dx, -pivot.dy);
 
-    _paintCrownLoop(canvas, pivot);
+    _paintCrownLoop(canvas, pivot, accent);
     final bodyPath = _bellBodyPath(center);
-    _paintBody(canvas, bodyPath, center);
-    _paintClapper(canvas, center);
+    _paintBody(canvas, bodyPath, center, accent, accentGradientStart, accentDark);
+    _paintClapper(canvas, center, accent, accentDark);
 
     canvas.restore();
 
@@ -122,15 +149,22 @@ class _BellPainter extends CustomPainter {
       ..close();
   }
 
-  void _paintBody(Canvas canvas, Path path, Offset center) {
+  void _paintBody(
+    Canvas canvas,
+    Path path,
+    Offset center,
+    Color accent,
+    Color accentGradientStart,
+    Color accentDark,
+  ) {
     final bounds = path.getBounds();
     canvas.drawPath(
       path,
       Paint()
-        ..shader = const LinearGradient(
+        ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF7C6FE8), Color(0xFF5B4BD4)],
+          colors: [accentGradientStart, accent],
         ).createShader(bounds),
     );
 
@@ -140,7 +174,7 @@ class _BellPainter extends CustomPainter {
       center + const Offset(-18, 6),
       26,
       Paint()
-        ..color = const Color(0xFF4A3BC4).withValues(alpha: 0.35)
+        ..color = accentDark.withValues(alpha: 0.35)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
     );
     canvas.drawCircle(
@@ -153,9 +187,9 @@ class _BellPainter extends CustomPainter {
     canvas.restore();
   }
 
-  void _paintClapper(Canvas canvas, Offset center) {
+  void _paintClapper(Canvas canvas, Offset center, Color accent, Color accentDark) {
     final clapperCenter = Offset(center.dx, center.dy + 26);
-    canvas.drawCircle(clapperCenter, 6.5, Paint()..color = const Color(0xFF4A3BC4));
+    canvas.drawCircle(clapperCenter, 6.5, Paint()..color = accentDark);
     canvas.drawArc(
       Rect.fromCircle(center: clapperCenter, radius: 6.5),
       math.pi * 1.1,
@@ -165,11 +199,11 @@ class _BellPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2
         ..strokeCap = StrokeCap.round
-        ..color = const Color(0xFF7C6FE8),
+        ..color = accent,
     );
   }
 
-  void _paintCrownLoop(Canvas canvas, Offset pivot) {
+  void _paintCrownLoop(Canvas canvas, Offset pivot, Color accent) {
     canvas.drawArc(
       Rect.fromCircle(center: pivot, radius: 7),
       math.pi * 1.05,
@@ -179,7 +213,7 @@ class _BellPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3
         ..strokeCap = StrokeCap.round
-        ..color = const Color(0xFF5B4BD4),
+        ..color = accent,
     );
   }
 
@@ -222,5 +256,9 @@ class _BellPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _BellPainter oldDelegate) =>
-      oldDelegate.t != t || oldDelegate.unreadCount != unreadCount;
+      oldDelegate.t != t ||
+      oldDelegate.unreadCount != unreadCount ||
+      oldDelegate.accent != accent ||
+      oldDelegate.accentGradientStart != accentGradientStart ||
+      oldDelegate.accentDark != accentDark;
 }

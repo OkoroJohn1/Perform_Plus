@@ -136,19 +136,19 @@ class _EmptyResults extends StatelessWidget {
           children: [
             const Icon(Icons.school_outlined, size: 48, color: Color(0xFFD1D5DB)),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'No results yet',
               style: TextStyle(
-                color: OnboardingLightPalette.bodyText,
+                color: context.palette.bodyText,
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Add your first semester to see your record',
               textAlign: TextAlign.center,
-              style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 15.5),
+              style: TextStyle(color: context.palette.secondaryText, fontSize: 15.5),
             ),
             const SizedBox(height: 20),
             _AddSemesterButton(onPressed: () => showAddSemesterSheet(context)),
@@ -175,7 +175,7 @@ class _StandingCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: context.palette.surface, borderRadius: BorderRadius.circular(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -307,7 +307,7 @@ class _GlassMiniStatBar extends StatelessWidget {
             border: Border.all(color: Colors.white.withValues(alpha: 0.65), width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: OnboardingLightPalette.bodyText.withValues(alpha: 0.10),
+                color: context.palette.bodyText.withValues(alpha: 0.10),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -316,7 +316,7 @@ class _GlassMiniStatBar extends StatelessWidget {
           child: Row(
             children: [
               for (var i = 0; i < cells.length; i++) ...[
-                if (i > 0) Container(width: 1, height: 30, color: OnboardingLightPalette.searchBorder),
+                if (i > 0) Container(width: 1, height: 30, color: context.palette.surfaceBorder),
                 Expanded(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -325,13 +325,13 @@ class _GlassMiniStatBar extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         cells[i].value,
-                        style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 16, fontWeight: FontWeight.w700),
+                        style: TextStyle(color: context.palette.bodyText, fontSize: 16, fontWeight: FontWeight.w700),
                       ),
                       Text(
                         cells[i].label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 10.5),
+                        style: TextStyle(color: context.palette.secondaryText, fontSize: 10.5),
                       ),
                     ],
                   ),
@@ -412,7 +412,7 @@ class _CreditSplitBar extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     '${unitsByLetter[letter]} at $letter',
-                    style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 12.5),
+                    style: TextStyle(color: context.palette.secondaryText, fontSize: 12.5),
                   ),
                 ],
               ),
@@ -441,7 +441,7 @@ class _GradeBreakdownCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: context.palette.surface, borderRadius: BorderRadius.circular(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -458,17 +458,17 @@ class _GradeBreakdownCard extends StatelessWidget {
                 child: Icon(Icons.table_chart_outlined, size: 18, color: context.palette.primary),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Grade Breakdown',
-                      style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
+                      style: TextStyle(color: context.palette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
                     ),
                     Text(
                       'Tap a semester to see its grade table',
-                      style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13),
+                      style: TextStyle(color: context.palette.secondaryText, fontSize: 13),
                     ),
                   ],
                 ),
@@ -565,13 +565,13 @@ class _SemesterAccordionState extends State<_SemesterAccordion> {
                     widget.scheme.termLabel(comp.term),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 15, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: context.palette.bodyText, fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                 ),
                 Text(
                   'GPA ${_fmt(comp.gpa)}',
                   style: TextStyle(
-                    color: performanceColor(comp.gpa, normal: OnboardingLightPalette.secondaryText),
+                    color: performanceColor(comp.gpa, normal: context.palette.secondaryText),
                     fontSize: 13.5,
                     fontWeight: FontWeight.w500,
                   ),
@@ -615,14 +615,14 @@ class _GradeTable extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
-                SizedBox(width: 40, child: Text('Grade', style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 12, fontWeight: FontWeight.w600))),
-                Expanded(child: Text('Courses', style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 12, fontWeight: FontWeight.w600))),
-                Expanded(child: Text('Units', style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 12, fontWeight: FontWeight.w600))),
-                Expanded(child: Text('Points', style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 12, fontWeight: FontWeight.w600), textAlign: TextAlign.right)),
+                SizedBox(width: 40, child: Text('Grade', style: TextStyle(color: context.palette.secondaryText, fontSize: 12, fontWeight: FontWeight.w600))),
+                Expanded(child: Text('Courses', style: TextStyle(color: context.palette.secondaryText, fontSize: 12, fontWeight: FontWeight.w600))),
+                Expanded(child: Text('Units', style: TextStyle(color: context.palette.secondaryText, fontSize: 12, fontWeight: FontWeight.w600))),
+                Expanded(child: Text('Points', style: TextStyle(color: context.palette.secondaryText, fontSize: 12, fontWeight: FontWeight.w600), textAlign: TextAlign.right)),
               ],
             ),
           ),
@@ -652,16 +652,16 @@ class _GradeTable extends StatelessWidget {
                     ),
                   ),
                   Expanded(
-                    child: Text('${row.courses}', style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 14)),
+                    child: Text('${row.courses}', style: TextStyle(color: context.palette.bodyText, fontSize: 14)),
                   ),
                   Expanded(
-                    child: Text('${row.units}', style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 14)),
+                    child: Text('${row.units}', style: TextStyle(color: context.palette.bodyText, fontSize: 14)),
                   ),
                   Expanded(
                     child: Text(
                       row.points.toStringAsFixed(0),
                       textAlign: TextAlign.right,
-                      style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 14, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: context.palette.bodyText, fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -685,12 +685,12 @@ class _SemesterListHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          const Icon(Icons.event_note_outlined, size: 20, color: OnboardingLightPalette.bodyText),
+          Icon(Icons.event_note_outlined, size: 20, color: context.palette.bodyText),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: Text(
               'Semesters',
-              style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 20, fontWeight: FontWeight.w700),
+              style: TextStyle(color: context.palette.bodyText, fontSize: 20, fontWeight: FontWeight.w700),
             ),
           ),
           TextButton.icon(
@@ -751,8 +751,8 @@ class _SemesterList extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: OnboardingLightPalette.searchBorder, width: 1.2),
+        color: context.palette.surface,
+        border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
         borderRadius: BorderRadius.circular(18),
       ),
       child: LayoutBuilder(
@@ -801,7 +801,7 @@ class _SemesterRow extends StatelessWidget {
         ? null
         : scheme.bandsDescending.indexWhere((b) => b.label == band.label);
     final barColor = bandIndex == null
-        ? OnboardingLightPalette.secondaryText
+        ? context.palette.secondaryText
         : ClassificationPalette.colorForBandIndex(bandIndex);
 
     final delta = showDelta && entry.previousGpa != null
@@ -845,7 +845,7 @@ class _SemesterRow extends StatelessWidget {
                       scheme.termLabel(comp.term),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13.5),
+                      style: TextStyle(color: context.palette.secondaryText, fontSize: 13.5),
                     ),
                   ],
                 ),
@@ -860,7 +860,7 @@ class _SemesterRow extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('GPA', style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13)),
+                          Text('GPA', style: TextStyle(color: context.palette.secondaryText, fontSize: 13)),
                           const SizedBox(height: 2),
                           Row(
                             children: [
@@ -886,7 +886,7 @@ class _SemesterRow extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('CGPA then', style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13)),
+                            Text('CGPA then', style: TextStyle(color: context.palette.secondaryText, fontSize: 13)),
                             const SizedBox(height: 2),
                             Text(
                               _fmt(entry.cgpaThen),
@@ -922,7 +922,7 @@ class _DeltaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rising = delta > 0;
-    final color = rising ? OnboardingLightPalette.success : OnboardingLightPalette.amber;
+    final color = rising ? context.palette.success : context.palette.amber;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1022,13 +1022,13 @@ class _PerformanceSummaryCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: context.palette.surface, borderRadius: BorderRadius.circular(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Your record',
-            style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
+            style: TextStyle(color: context.palette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 16),
           // A `GridView.count` with a fixed `childAspectRatio` forces every
@@ -1084,10 +1084,10 @@ class _PerformanceSummaryCard extends StatelessWidget {
                           value: '${trend >= 0 ? '+' : '−'}${trend.abs().toStringAsFixed(2)}',
                           label: 'Recent trend',
                           valueColor: trend > 0
-                              ? OnboardingLightPalette.success
+                              ? context.palette.success
                               : trend < 0
-                                  ? OnboardingLightPalette.amber
-                                  : OnboardingLightPalette.secondaryText,
+                                  ? context.palette.amber
+                                  : context.palette.secondaryText,
                         ),
                 ),
               ],
@@ -1135,7 +1135,7 @@ class _SummaryTile extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: valueColor ?? OnboardingLightPalette.bodyText,
+              color: valueColor ?? context.palette.bodyText,
               fontSize: 22,
               fontWeight: FontWeight.w700,
             ),
@@ -1145,7 +1145,7 @@ class _SummaryTile extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13),
+            style: TextStyle(color: context.palette.secondaryText, fontSize: 13),
           ),
         ],
       ),
@@ -1198,29 +1198,29 @@ class _CarryoverCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: context.palette.surface, borderRadius: BorderRadius.circular(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.replay, size: 20, color: OnboardingLightPalette.amber),
+              Icon(Icons.replay, size: 20, color: context.palette.amber),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Carryovers',
-                  style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
+                  style: TextStyle(color: context.palette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: OnboardingLightPalette.amber.withValues(alpha: 0.10),
+                  color: context.palette.amber.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   '${entries.length}',
-                  style: const TextStyle(color: OnboardingLightPalette.amber, fontSize: 13, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: context.palette.amber, fontSize: 13, fontWeight: FontWeight.w600),
                 ),
               ),
             ],
@@ -1233,14 +1233,14 @@ class _CarryoverCard extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             _policyNote(institution?.name ?? scheme.name),
-            style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14),
+            style: TextStyle(color: context.palette.secondaryText, fontSize: 14),
           ),
           if (!scheme.isVerified) ...[
             const SizedBox(height: 6),
             Text(
               "We haven't confirmed ${institution?.abbreviation ?? scheme.name}'s carryover rule — "
               'check this against your department.',
-              style: const TextStyle(color: OnboardingLightPalette.amber, fontSize: 14),
+              style: TextStyle(color: context.palette.amber, fontSize: 14),
             ),
           ],
         ],
@@ -1267,7 +1267,7 @@ class _CarryoverRow extends StatelessWidget {
             children: [
               Text(
                 entry.courseCode,
-                style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 16, fontWeight: FontWeight.w500),
+                style: TextStyle(color: context.palette.bodyText, fontSize: 16, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 6),
               Wrap(
@@ -1278,12 +1278,12 @@ class _CarryoverRow extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: OnboardingLightPalette.standingFill,
+                        color: context.palette.background,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         '${a.semester.level}L ${scheme.termLabel(a.semester.term)}: ${a.result.grade}',
-                        style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13),
+                        style: TextStyle(color: context.palette.secondaryText, fontSize: 13),
                       ),
                     ),
                 ],
@@ -1293,20 +1293,20 @@ class _CarryoverRow extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         cleared
-            ? const Row(
+            ? Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.check_circle, size: 16, color: OnboardingLightPalette.success),
+                  Icon(Icons.check_circle, size: 16, color: context.palette.success),
                   SizedBox(width: 4),
                   Text(
                     'Cleared',
-                    style: TextStyle(color: OnboardingLightPalette.success, fontSize: 14.5, fontWeight: FontWeight.w500),
+                    style: TextStyle(color: context.palette.success, fontSize: 14.5, fontWeight: FontWeight.w500),
                   ),
                 ],
               )
-            : const Text(
+            : Text(
                 'Outstanding',
-                style: TextStyle(color: OnboardingLightPalette.amber, fontSize: 14.5, fontWeight: FontWeight.w500),
+                style: TextStyle(color: context.palette.amber, fontSize: 14.5, fontWeight: FontWeight.w500),
               ),
       ],
     );
@@ -1442,8 +1442,8 @@ class _SemesterDetailSheet extends ConsumerWidget {
       maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: context.palette.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: ListView(
@@ -1452,7 +1452,7 @@ class _SemesterDetailSheet extends ConsumerWidget {
           children: [
             Text(
               '${semester.level}L · ${scheme.termLabel(semester.term)}',
-              style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
+              style: TextStyle(color: context.palette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 16),
             for (final r in semester.results)
@@ -1478,13 +1478,13 @@ class _SemesterDetailSheet extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Total',
-                  style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 16, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: context.palette.bodyText, fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 Text(
                   '${computation.qualityPoints.toStringAsFixed(0)} ÷ ${computation.creditUnits}',
-                  style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 15),
+                  style: TextStyle(color: context.palette.secondaryText, fontSize: 15),
                 ),
                 Text(
                   _fmt(computation.gpa),
@@ -1497,8 +1497,8 @@ class _SemesterDetailSheet extends ConsumerWidget {
               width: double.infinity,
               child: TextButton.icon(
                 onPressed: deleteSemester,
-                icon: const Icon(Icons.delete_outline, color: OnboardingLightPalette.error),
-                label: const Text('Delete semester', style: TextStyle(color: OnboardingLightPalette.error)),
+                icon: Icon(Icons.delete_outline, color: context.palette.error),
+                label: Text('Delete semester', style: TextStyle(color: context.palette.error)),
               ),
             ),
           ],
@@ -1535,7 +1535,7 @@ class _DetailCourseRow extends StatelessWidget {
             flex: 3,
             child: Text(
               '${result.creditUnit} × ${point.toStringAsFixed(1)} (${result.grade})',
-              style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13.5),
+              style: TextStyle(color: context.palette.secondaryText, fontSize: 13.5),
             ),
           ),
           SizedBox(
@@ -1548,7 +1548,7 @@ class _DetailCourseRow extends StatelessWidget {
             visualDensity: VisualDensity.compact,
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline, size: 18, color: OnboardingLightPalette.error),
+            icon: Icon(Icons.delete_outline, size: 18, color: context.palette.error),
             onPressed: onDelete,
             visualDensity: VisualDensity.compact,
           ),

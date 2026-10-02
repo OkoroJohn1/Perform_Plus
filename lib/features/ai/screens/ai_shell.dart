@@ -54,14 +54,14 @@ extension _InsightPresentation on Insight {
             Feasibility.unreachable => FeasibilityPalette.unreachable,
           },
         InsightKind.trend => switch (trendDirection!) {
-            TrendDirection.rising => OnboardingLightPalette.success,
-            TrendDirection.falling => OnboardingLightPalette.amber,
+            TrendDirection.rising => palette.success,
+            TrendDirection.falling => palette.amber,
             TrendDirection.steady => palette.primary,
           },
-        InsightKind.weakestCreditLoad => OnboardingLightPalette.amber,
-        InsightKind.carryovers => OnboardingLightPalette.amber,
+        InsightKind.weakestCreditLoad => palette.amber,
+        InsightKind.carryovers => palette.amber,
         InsightKind.nextEntry => palette.primary,
-        InsightKind.insufficientData => OnboardingLightPalette.secondaryText,
+        InsightKind.insufficientData => palette.secondaryText,
       };
 }
 
@@ -108,12 +108,12 @@ class AiShell extends ConsumerWidget {
                     ],
                     if (state.insights.isNotEmpty) ...[
                       const SizedBox(height: 26),
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20),
                         child: Text(
                           'Your insights',
                           style: TextStyle(
-                            color: OnboardingLightPalette.bodyText,
+                            color: context.palette.bodyText,
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
                           ),
@@ -171,12 +171,12 @@ class _AiAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                   ),
                 ),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Performia',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: OnboardingLightPalette.bodyText,
+                      color: context.palette.bodyText,
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
                     ),
@@ -217,7 +217,7 @@ class _NotificationBell extends ConsumerWidget {
               child: Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(color: OnboardingLightPalette.error, shape: BoxShape.circle),
+                decoration: BoxDecoration(color: context.palette.error, shape: BoxShape.circle),
               ),
             ),
         ],
@@ -273,8 +273,8 @@ class _GreetingCard extends StatelessWidget {
               children: [
                 Text(
                   'Hi $firstName',
-                  style: const TextStyle(
-                    color: OnboardingLightPalette.bodyText,
+                  style: TextStyle(
+                    color: context.palette.bodyText,
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
                   ),
@@ -284,7 +284,7 @@ class _GreetingCard extends StatelessWidget {
                   isCritical
                       ? "Here's where your record stands."
                       : "Here's what your numbers say about your goal.",
-                  style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 16),
+                  style: TextStyle(color: context.palette.secondaryText, fontSize: 16),
                 ),
               ],
             ),
@@ -323,7 +323,7 @@ class _CriticalStandingCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: OnboardingLightPalette.bodyText.withValues(alpha: 0.05),
+            color: context.palette.bodyText.withValues(alpha: 0.05),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -332,15 +332,15 @@ class _CriticalStandingCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.info_outline, size: 24, color: OnboardingLightPalette.secondaryText),
+              Icon(Icons.info_outline, size: 24, color: context.palette.secondaryText),
               SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Your CGPA is below the pass mark',
                   style: TextStyle(
-                    color: OnboardingLightPalette.secondaryText,
+                    color: context.palette.secondaryText,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -352,7 +352,7 @@ class _CriticalStandingCard extends StatelessWidget {
           Text(
             'Your CGPA is ${_fmt(critical.cgpa)}. ${critical.institutionName}\'s lowest '
             'classification starts at ${_fmt(critical.lowestBand.minCgpa)}.',
-            style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 15.5),
+            style: TextStyle(color: context.palette.bodyText, fontSize: 15.5),
           ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 18),
@@ -369,7 +369,7 @@ class _CriticalStandingCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(whatItWouldTake, style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 15.5)),
+          Text(whatItWouldTake, style: TextStyle(color: context.palette.bodyText, fontSize: 15.5)),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 18),
             child: Divider(height: 1, color: Color(0xFFECECF1)),
@@ -385,16 +385,16 @@ class _CriticalStandingCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Your department decides what happens next — probation, extra semesters, or an '
             "appeal. Those options aren't visible in your results, and this app can't see them.",
-            style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 15.5),
+            style: TextStyle(color: context.palette.bodyText, fontSize: 15.5),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             "If you're carrying more than the grades, your school's counselling unit is there "
             'for that too.',
-            style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14),
+            style: TextStyle(color: context.palette.secondaryText, fontSize: 14),
           ),
         ],
       ),
@@ -417,7 +417,7 @@ class _InsightsContainer extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: OnboardingLightPalette.bodyText.withValues(alpha: 0.05),
+            color: context.palette.bodyText.withValues(alpha: 0.05),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -472,13 +472,13 @@ class _InsightRow extends StatelessWidget {
                     insight.body,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 15.5),
+                    style: TextStyle(color: context.palette.bodyText, fontSize: 15.5),
                   ),
                   if (insight.warning != null) ...[
                     const SizedBox(height: 4),
                     Text(
                       insight.warning!,
-                      style: const TextStyle(color: OnboardingLightPalette.amber, fontSize: 14),
+                      style: TextStyle(color: context.palette.amber, fontSize: 14),
                     ),
                   ],
                 ],
@@ -508,10 +508,10 @@ void _showInsightDetail(BuildContext context, Insight insight) {
               style: TextStyle(color: insight.colorFor(context.palette), fontSize: 19, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
-            Text(insight.body, style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 16)),
+            Text(insight.body, style: TextStyle(color: context.palette.bodyText, fontSize: 16)),
             if (insight.warning != null) ...[
               const SizedBox(height: 8),
-              Text(insight.warning!, style: const TextStyle(color: OnboardingLightPalette.amber, fontSize: 14)),
+              Text(insight.warning!, style: TextStyle(color: context.palette.amber, fontSize: 14)),
             ],
           ],
         ),
@@ -603,11 +603,11 @@ class _EmptyAdvisor extends StatelessWidget {
         const SizedBox(height: 40),
         const Icon(Icons.insights_outlined, size: 44, color: Color(0xFFD1D5DB)),
         const SizedBox(height: 16),
-        const Center(
+        Center(
           child: Text(
             "Add a semester and I'll have something to say",
             textAlign: TextAlign.center,
-            style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 16),
+            style: TextStyle(color: context.palette.secondaryText, fontSize: 16),
           ),
         ),
         const SizedBox(height: 20),

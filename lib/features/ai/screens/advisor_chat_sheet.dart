@@ -14,7 +14,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_palette.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../data/repositories/academic_record_provider.dart';
 import '../../../data/repositories/goal_provider.dart';
 import '../../../shared/widgets/advisor_mark.dart';
@@ -62,8 +61,8 @@ class _AdvisorChatSheet extends ConsumerWidget {
       maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: context.palette.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -74,11 +73,11 @@ class _AdvisorChatSheet extends ConsumerWidget {
                 children: [
                   const AdvisorMark(size: 32, simplified: true),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Performia',
                       style: TextStyle(
-                        color: OnboardingLightPalette.bodyText,
+                        color: context.palette.bodyText,
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                       ),
@@ -88,7 +87,7 @@ class _AdvisorChatSheet extends ConsumerWidget {
                     width: 44,
                     height: 44,
                     child: IconButton(
-                      icon: const Icon(Icons.close, size: 24, color: OnboardingLightPalette.secondaryText),
+                      icon: Icon(Icons.close, size: 24, color: context.palette.secondaryText),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ),
@@ -133,20 +132,20 @@ class _ChatStub extends StatelessWidget {
           child: Opacity(opacity: 0.4, child: AdvisorMark(size: 72)),
         ),
         const SizedBox(height: 20),
-        const Text(
+        Text(
           'Chat is coming soon',
           textAlign: TextAlign.center,
-          style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 19, fontWeight: FontWeight.w600),
+          style: TextStyle(color: context.palette.bodyText, fontSize: 19, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 280),
-            child: const Text(
+            child: Text(
               'Your insights above are live and computed from your actual results. '
               'Conversational advice arrives in the next update.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 15.5),
+              style: TextStyle(color: context.palette.secondaryText, fontSize: 15.5),
             ),
           ),
         ),

@@ -458,7 +458,7 @@ class _DetailRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: OnboardingLightPalette.secondaryText)),
+          Text(label, style: TextStyle(color: context.palette.secondaryText)),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
         ],
       ),

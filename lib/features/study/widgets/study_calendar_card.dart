@@ -12,7 +12,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_palette.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../data/repositories/calendar_provider.dart';
 import '../../../domain/models/calendar_mark.dart';
 
@@ -76,18 +75,18 @@ class _StudyCalendarCardState extends ConsumerState<StudyCalendarCard> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: context.palette.surface, borderRadius: BorderRadius.circular(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Study calendar',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
+                  style: TextStyle(color: context.palette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
                 ),
               ),
               const SizedBox(width: 4),
@@ -105,7 +104,7 @@ class _StudyCalendarCardState extends ConsumerState<StudyCalendarCard> {
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13.5, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: context.palette.secondaryText, fontSize: 13.5, fontWeight: FontWeight.w600),
                 ),
               ),
               IconButton(
@@ -119,9 +118,9 @@ class _StudyCalendarCardState extends ConsumerState<StudyCalendarCard> {
             ],
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Tap a day to mark it studied; long-press to add a note.',
-            style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 12.5),
+            style: TextStyle(color: context.palette.secondaryText, fontSize: 12.5),
           ),
           const SizedBox(height: 14),
           Row(
@@ -129,7 +128,7 @@ class _StudyCalendarCardState extends ConsumerState<StudyCalendarCard> {
               for (final label in _weekdayLabels)
                 Expanded(
                   child: Center(
-                    child: Text(label, style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 12, fontWeight: FontWeight.w600)),
+                    child: Text(label, style: TextStyle(color: context.palette.secondaryText, fontSize: 12, fontWeight: FontWeight.w600)),
                   ),
                 ),
             ],
@@ -168,7 +167,7 @@ class _StudyCalendarCardState extends ConsumerState<StudyCalendarCard> {
                           Text(
                             '$dayNumber',
                             style: TextStyle(
-                              color: mark != null ? Colors.white : OnboardingLightPalette.bodyText,
+                              color: mark != null ? Colors.white : context.palette.bodyText,
                               fontSize: 13.5,
                               fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
                             ),

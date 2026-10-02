@@ -47,19 +47,19 @@ class RoadmapView extends ConsumerWidget {
       children: [
         Row(
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
                 'Level Roadmap',
-                style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 22, fontWeight: FontWeight.w700),
+                style: TextStyle(color: context.palette.bodyText, fontSize: 22, fontWeight: FontWeight.w700),
               ),
             ),
             _SimulateButton(onTap: () => _showSimulateSheet(context, ref, standing, profile)),
           ],
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Your programme, one level at a time',
-          style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14.5),
+          style: TextStyle(color: context.palette.secondaryText, fontSize: 14.5),
         ),
         const SizedBox(height: 20),
         for (final level in AppConstants.levels)
@@ -106,19 +106,19 @@ class RoadmapView extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Simulate your future',
-                  style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 20, fontWeight: FontWeight.w700),
+                  style: TextStyle(color: context.palette.bodyText, fontSize: 20, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'A sustained GPA across a chosen number of semesters -- never a probability, just honest arithmetic on your own record.',
-                  style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13.5),
+                  style: TextStyle(color: context.palette.secondaryText, fontSize: 13.5),
                 ),
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   'For how many semesters?',
-                  style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 14, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: context.palette.bodyText, fontSize: 14, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 10),
                 Wrap(
@@ -135,13 +135,13 @@ class RoadmapView extends ConsumerWidget {
                 const SizedBox(height: 20),
                 Text(
                   'If your GPA is ${_fmt(assumedGpa)} each semester:',
-                  style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 14.5, fontWeight: FontWeight.w500),
+                  style: TextStyle(color: context.palette.bodyText, fontSize: 14.5, fontWeight: FontWeight.w500),
                 ),
                 SliderTheme(
                   data: SliderTheme.of(sheetContext).copyWith(
                     activeTrackColor: context.palette.primary,
                     thumbColor: context.palette.primary,
-                    inactiveTrackColor: OnboardingLightPalette.searchBorder,
+                    inactiveTrackColor: context.palette.surfaceBorder,
                   ),
                   child: Slider(
                     value: assumedGpa.clamp(0, scheme.maxPoint),
@@ -211,13 +211,13 @@ class _SemesterChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? context.palette.primary : OnboardingLightPalette.standingFill,
+          color: selected ? context.palette.primary : context.palette.background,
           borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : OnboardingLightPalette.bodyText,
+            color: selected ? Colors.white : context.palette.bodyText,
             fontSize: 13.5,
             fontWeight: FontWeight.w600,
           ),
@@ -247,7 +247,7 @@ class _ProjectionResultCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _MiniBar(label: 'Now', value: standing.cgpa, max: barMax, color: OnboardingLightPalette.secondaryText),
+          _MiniBar(label: 'Now', value: standing.cgpa, max: barMax, color: context.palette.secondaryText),
           const SizedBox(height: 10),
           _MiniBar(
             label: 'Projected',
@@ -261,7 +261,7 @@ class _ProjectionResultCard extends StatelessWidget {
               Icon(
                 rising ? Icons.trending_up : Icons.trending_down,
                 size: 18,
-                color: rising ? OnboardingLightPalette.success : OnboardingLightPalette.amber,
+                color: rising ? context.palette.success : context.palette.amber,
               ),
               const SizedBox(width: 6),
               Expanded(
@@ -270,7 +270,7 @@ class _ProjectionResultCard extends StatelessWidget {
                       ? 'Up ${_fmt(projection.deltaFromCurrent)} from your current CGPA'
                       : 'Down ${_fmt(-projection.deltaFromCurrent)} from your current CGPA',
                   style: TextStyle(
-                    color: rising ? OnboardingLightPalette.success : OnboardingLightPalette.amber,
+                    color: rising ? context.palette.success : context.palette.amber,
                     fontSize: 13.5,
                     fontWeight: FontWeight.w600,
                   ),
@@ -282,7 +282,7 @@ class _ProjectionResultCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               'Lands in ${projection.projectedClassification!.label}',
-              style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13),
+              style: TextStyle(color: context.palette.secondaryText, fontSize: 13),
             ),
           ],
         ],
@@ -305,7 +305,7 @@ class _MiniBar extends StatelessWidget {
       children: [
         SizedBox(
           width: 66,
-          child: Text(label, style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 12.5)),
+          child: Text(label, style: TextStyle(color: context.palette.secondaryText, fontSize: 12.5)),
         ),
         Expanded(
           child: ClipRRect(
@@ -329,7 +329,7 @@ class _MiniBar extends StatelessWidget {
           child: Text(
             _fmt(value),
             textAlign: TextAlign.right,
-            style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 13, fontWeight: FontWeight.w700),
+            style: TextStyle(color: context.palette.bodyText, fontSize: 13, fontWeight: FontWeight.w700),
           ),
         ),
       ],
@@ -350,15 +350,15 @@ class _EmptyRoadmap extends StatelessWidget {
           children: [
             const Icon(Icons.timeline_outlined, size: 48, color: Color(0xFFD1D5DB)),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'No roadmap yet',
-              style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 18, fontWeight: FontWeight.w600),
+              style: TextStyle(color: context.palette.bodyText, fontSize: 18, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Add results to see your progress across levels.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 15.5),
+              style: TextStyle(color: context.palette.secondaryText, fontSize: 15.5),
             ),
           ],
         ),
@@ -393,8 +393,8 @@ class _LevelCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = _status;
     final (icon, dotColor) = switch (status) {
-      _LevelStatus.complete => (Icons.check_circle, OnboardingLightPalette.success),
-      _LevelStatus.partial => (Icons.adjust, OnboardingLightPalette.amber),
+      _LevelStatus.complete => (Icons.check_circle, context.palette.success),
+      _LevelStatus.partial => (Icons.adjust, context.palette.amber),
       _LevelStatus.current => (Icons.radio_button_checked, context.palette.primary),
       _LevelStatus.upcoming => (Icons.circle_outlined, const Color(0xFFD1D5DB)),
     };
@@ -416,12 +416,12 @@ class _LevelCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.palette.surface,
                   borderRadius: BorderRadius.circular(16),
                   border: isCurrent ? Border.all(color: context.palette.primary, width: 1.4) : null,
                   boxShadow: [
                     BoxShadow(
-                      color: OnboardingLightPalette.bodyText.withValues(alpha: 0.04),
+                      color: context.palette.bodyText.withValues(alpha: 0.04),
                       blurRadius: 10,
                       offset: const Offset(0, 3),
                     ),
@@ -436,7 +436,7 @@ class _LevelCard extends StatelessWidget {
                           Text(
                             '$level Level',
                             style: TextStyle(
-                              color: OnboardingLightPalette.bodyText,
+                              color: context.palette.bodyText,
                               fontSize: 16,
                               fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
                             ),
@@ -492,9 +492,9 @@ class _LevelCard extends StatelessWidget {
       };
 
   Color _statusLabelColor(BuildContext context, _LevelStatus status) => switch (status) {
-        _LevelStatus.complete => OnboardingLightPalette.success,
-        _LevelStatus.partial => OnboardingLightPalette.amber,
+        _LevelStatus.complete => context.palette.success,
+        _LevelStatus.partial => context.palette.amber,
         _LevelStatus.current => context.palette.primary,
-        _LevelStatus.upcoming => OnboardingLightPalette.secondaryText,
+        _LevelStatus.upcoming => context.palette.secondaryText,
       };
 }

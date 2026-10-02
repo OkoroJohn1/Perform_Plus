@@ -10,7 +10,6 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_palette.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../domain/engine/cgpa_engine.dart';
 import '../../../domain/engine/projection_solver.dart';
 import '../../../domain/models/backfill_plan.dart';
@@ -110,7 +109,7 @@ class NextActionCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       child: Material(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           onTap: onTap,
@@ -134,10 +133,10 @@ class NextActionCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Next action',
                         style: TextStyle(
-                          color: OnboardingLightPalette.secondaryText,
+                          color: context.palette.secondaryText,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -145,8 +144,8 @@ class NextActionCard extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         action.text,
-                        style: const TextStyle(
-                          color: OnboardingLightPalette.bodyText,
+                        style: TextStyle(
+                          color: context.palette.bodyText,
                           fontSize: 16.5,
                           fontWeight: FontWeight.w500,
                         ),

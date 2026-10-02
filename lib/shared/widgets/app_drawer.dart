@@ -16,7 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/routes.dart';
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/theme/theme_accent_provider.dart';
 import '../../core/theme/theme_mode_provider.dart';
 import '../../domain/models/student_profile.dart';
@@ -115,8 +115,8 @@ class _DrawerSectionLabel extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
         child: Text(
           label.toUpperCase(),
-          style: const TextStyle(
-            color: OnboardingLightPalette.secondaryText,
+          style: TextStyle(
+            color: context.palette.secondaryText,
             fontSize: 11.5,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.6,

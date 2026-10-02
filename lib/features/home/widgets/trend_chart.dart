@@ -62,7 +62,7 @@ class TrendCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -70,10 +70,10 @@ class TrendCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 'CGPA trend',
                 style: TextStyle(
-                  color: OnboardingLightPalette.bodyText,
+                  color: context.palette.bodyText,
                   fontSize: 19,
                   fontWeight: FontWeight.w700,
                 ),
@@ -107,10 +107,10 @@ class _DeltaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = delta > 0
-        ? OnboardingLightPalette.success
+        ? context.palette.success
         : delta < 0
-            ? OnboardingLightPalette.amber
-            : OnboardingLightPalette.secondaryText;
+            ? context.palette.amber
+            : context.palette.secondaryText;
     final icon = delta > 0 ? Icons.arrow_upward : Icons.arrow_downward;
     final text = '${delta > 0 ? '+' : ''}${delta.toStringAsFixed(2)}';
 
@@ -262,7 +262,7 @@ class _TrendChartBodyState extends State<_TrendChartBody> with TickerProviderSta
               padding: const EdgeInsets.only(top: 6),
               child: Text(
                 '${comp.level}L ${_shortTermLabel(scheme, comp.term)}',
-                style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13),
+                style: TextStyle(color: context.palette.secondaryText, fontSize: 13),
               ),
             );
           },
@@ -282,8 +282,8 @@ class _TrendChartBodyState extends State<_TrendChartBody> with TickerProviderSta
           final comp = standing.semesters[i];
           return LineTooltipItem(
             _fmt(spot.y),
-            const TextStyle(
-              color: OnboardingLightPalette.bodyText,
+            TextStyle(
+              color: context.palette.bodyText,
               fontSize: 13.5,
               fontWeight: FontWeight.w600,
             ),
@@ -291,8 +291,8 @@ class _TrendChartBodyState extends State<_TrendChartBody> with TickerProviderSta
               TextSpan(
                 text: '\n${_fmt(comp.gpa)} GPA · ${comp.creditUnits}cr · '
                     '${_courseCountFor(comp)} courses',
-                style: const TextStyle(
-                  color: OnboardingLightPalette.secondaryText,
+                style: TextStyle(
+                  color: context.palette.secondaryText,
                   fontSize: 10,
                   fontWeight: FontWeight.w400,
                 ),
@@ -407,7 +407,7 @@ class TrendPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
+    return SizedBox(
       height: 200,
       child: Center(
         child: Padding(
@@ -420,7 +420,7 @@ class TrendPlaceholder extends StatelessWidget {
               Text(
                 'Add one more semester to see your trend',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 15),
+                style: TextStyle(color: context.palette.secondaryText, fontSize: 15),
               ),
             ],
           ),

@@ -123,12 +123,12 @@ class _DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                   ),
                 ),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Dashboard',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: OnboardingLightPalette.bodyText,
+                      color: context.palette.bodyText,
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
                     ),
@@ -169,8 +169,8 @@ class _NotificationBell extends ConsumerWidget {
               child: Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(
-                  color: OnboardingLightPalette.error,
+                decoration: BoxDecoration(
+                  color: context.palette.error,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -194,10 +194,10 @@ class _EmptyDashboard extends StatelessWidget {
           children: [
             const Icon(Icons.insights_outlined, size: 44, color: Color(0xFFD1D5DB)),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Add your first semester to see your dashboard',
               textAlign: TextAlign.center,
-              style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 16),
+              style: TextStyle(color: context.palette.secondaryText, fontSize: 16),
             ),
             const SizedBox(height: 20),
             FilledButton(
@@ -245,14 +245,19 @@ class _PopulatedDashboard extends ConsumerWidget {
               Positioned(
                 left: 28,
                 right: 28,
-                bottom: -34,
+                // Was -34 -- too shallow an overlap: when the hero card's
+                // content ran a bit taller (e.g. the "Below 3.50" badge
+                // showing), the classification label sat low enough in the
+                // card to collide with this bar's own icons/numbers instead
+                // of just touching the gradient's empty margin below it.
+                bottom: -54,
                 child: QuickStatsRow(standing: standing, rawSemesters: rawSemesters),
               ),
             ],
           ),
           // Room for the stats bar floating below the hero card's bottom
-          // edge (see the Stack above) plus normal breathing space.
-          const SizedBox(height: 54),
+          // edge (see the Stack above, now -54) plus normal breathing space.
+          const SizedBox(height: 74),
           if (goal != null &&
               goal.feasibility.name != 'secured' &&
               goal.requiredAverage != null) ...[
@@ -316,16 +321,16 @@ class _GreetingRow extends StatelessWidget {
                 children: [
                   TextSpan(
                     text: '${_greeting()}, ',
-                    style: const TextStyle(
-                      color: OnboardingLightPalette.secondaryText,
+                    style: TextStyle(
+                      color: context.palette.secondaryText,
                       fontSize: 22,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   TextSpan(
                     text: _firstName(name),
-                    style: const TextStyle(
-                      color: OnboardingLightPalette.bodyText,
+                    style: TextStyle(
+                      color: context.palette.bodyText,
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.3,
@@ -366,7 +371,7 @@ class _Avatar extends StatelessWidget {
           border: Border.all(color: Colors.white, width: 2),
           boxShadow: [
             BoxShadow(
-              color: OnboardingLightPalette.bodyText.withValues(alpha: 0.08),
+              color: context.palette.bodyText.withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

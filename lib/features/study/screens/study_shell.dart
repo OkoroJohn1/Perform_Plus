@@ -100,8 +100,8 @@ class _SectionHeader extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                color: OnboardingLightPalette.bodyText,
+              style: TextStyle(
+                color: context.palette.bodyText,
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
               ),
@@ -147,11 +147,11 @@ class _StudyAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                   ),
                 ),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Study',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
+                    style: TextStyle(color: context.palette.bodyText, fontSize: 19, fontWeight: FontWeight.w700),
                   ),
                 ),
                 const _NotificationBell(),
@@ -189,7 +189,7 @@ class _NotificationBell extends ConsumerWidget {
               child: Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(color: OnboardingLightPalette.error, shape: BoxShape.circle),
+                decoration: BoxDecoration(color: context.palette.error, shape: BoxShape.circle),
               ),
             ),
         ],
@@ -210,7 +210,7 @@ class _HeroBanner extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: const LinearGradient(colors: [Color(0xFFF1EFFE), Color(0xFFFAF9FF)]),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: OnboardingLightPalette.searchBorder, width: 1.2),
+        border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -222,8 +222,8 @@ class _HeroBanner extends StatelessWidget {
               children: [
                 RichText(
                   text: TextSpan(
-                    style: const TextStyle(
-                      color: OnboardingLightPalette.bodyText,
+                    style: TextStyle(
+                      color: context.palette.bodyText,
                       fontSize: 23,
                       fontWeight: FontWeight.w700,
                     ),
@@ -237,9 +237,9 @@ class _HeroBanner extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Text(
+                Text(
                   'Small daily actions lead to big academic wins.',
-                  style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 15.5),
+                  style: TextStyle(color: context.palette.secondaryText, fontSize: 15.5),
                 ),
               ],
             ),
@@ -266,7 +266,7 @@ class _StudyOverview extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: OnboardingLightPalette.searchBorder, width: 1.2),
+        border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
         borderRadius: BorderRadius.circular(18),
       ),
       child: IntrinsicHeight(
@@ -338,14 +338,14 @@ class _OverviewTile extends StatelessWidget {
         const SizedBox(height: 10),
         Text(
           value,
-          style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 21, fontWeight: FontWeight.w700),
+          style: TextStyle(color: context.palette.bodyText, fontSize: 21, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 4),
         Text(
           label,
           textAlign: TextAlign.center,
           maxLines: 2,
-          style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 12.5),
+          style: TextStyle(color: context.palette.secondaryText, fontSize: 12.5),
         ),
       ],
     );
@@ -384,7 +384,7 @@ class _MyNotesSection extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 20),
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border.all(color: OnboardingLightPalette.searchBorder, width: 1.2),
+            border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
             borderRadius: BorderRadius.circular(18),
           ),
           child: Column(
@@ -500,8 +500,8 @@ class _NoteRow extends ConsumerWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: OnboardingLightPalette.error),
-              title: const Text('Delete', style: TextStyle(color: OnboardingLightPalette.error)),
+              leading: Icon(Icons.delete_outline, color: context.palette.error),
+              title: Text('Delete', style: TextStyle(color: context.palette.error)),
               onTap: () {
                 Navigator.of(sheetContext).pop();
                 ref.read(notesProvider.notifier).deleteNote(note.id);
@@ -545,12 +545,12 @@ class _NoteRow extends ConsumerWidget {
                       note.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 16.5, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: context.palette.bodyText, fontSize: 16.5, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       '$pagesRead of ${note.totalPages} pages read',
-                      style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14),
+                      style: TextStyle(color: context.palette.secondaryText, fontSize: 14),
                     ),
                     const SizedBox(height: 10),
                     ClipRRect(
@@ -668,7 +668,7 @@ class _TodaysPlanSection extends ConsumerWidget {
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border.all(color: OnboardingLightPalette.searchBorder, width: 1.2),
+            border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
@@ -677,8 +677,8 @@ class _TodaysPlanSection extends ConsumerWidget {
                 width: 48,
                 height: 48,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(color: OnboardingLightPalette.success.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(12)),
-                child: const Icon(Icons.checklist_rtl, size: 22, color: OnboardingLightPalette.success),
+                decoration: BoxDecoration(color: context.palette.success.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(12)),
+                child: Icon(Icons.checklist_rtl, size: 22, color: context.palette.success),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -687,12 +687,12 @@ class _TodaysPlanSection extends ConsumerWidget {
                   children: [
                     Text(
                       '${tasks.length} task${tasks.length == 1 ? '' : 's'} for today',
-                      style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 16.5, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: context.palette.bodyText, fontSize: 16.5, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       tasks.isEmpty ? 'Nothing scheduled yet' : tasks.first.noteTitle,
-                      style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14.5),
+                      style: TextStyle(color: context.palette.secondaryText, fontSize: 14.5),
                     ),
                   ],
                 ),
@@ -771,17 +771,17 @@ class _EmptyNotesBlock extends StatelessWidget {
         const SizedBox(height: 8),
         const NoteIllustration(opacity: 0.4),
         const SizedBox(height: 20),
-        const Text(
+        Text(
           'No notes yet',
-          style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 19, fontWeight: FontWeight.w600),
+          style: TextStyle(color: context.palette.bodyText, fontSize: 19, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 40),
           child: Text(
             'Upload a PDF of your lecture notes to start tracking your reading.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 15.5),
+            style: TextStyle(color: context.palette.secondaryText, fontSize: 15.5),
           ),
         ),
         const SizedBox(height: 24),
@@ -814,7 +814,7 @@ class _StudyToolsGrid extends StatelessWidget {
               _StudyToolTile(
                 icon: Icons.style_outlined,
                 label: 'Flashcards',
-                color: OnboardingLightPalette.success,
+                color: context.palette.success,
                 width: (constraints.maxWidth - 12) / 2,
                 onTap: () => showUploadNoteSheet(context, category: NoteCategory.flashcards),
               ),
@@ -889,7 +889,7 @@ class _StudyToolTile extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white,
-              border: Border.all(color: OnboardingLightPalette.searchBorder, width: 1.2),
+              border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Stack(
@@ -904,14 +904,14 @@ class _StudyToolTile extends StatelessWidget {
                       child: Icon(icon, size: 22, color: color),
                     ),
                     const SizedBox(height: 12),
-                    Text(label, style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 15, fontWeight: FontWeight.w600)),
+                    Text(label, style: TextStyle(color: context.palette.bodyText, fontSize: 15, fontWeight: FontWeight.w600)),
                   ],
                 ),
                 if (locked)
-                  const Positioned(
+                  Positioned(
                     top: 0,
                     right: 0,
-                    child: Icon(Icons.lock_outline, size: 14, color: OnboardingLightPalette.secondaryText),
+                    child: Icon(Icons.lock_outline, size: 14, color: context.palette.secondaryText),
                   ),
               ],
             ),

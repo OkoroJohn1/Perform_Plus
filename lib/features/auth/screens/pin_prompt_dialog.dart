@@ -8,7 +8,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_palette.dart';
 import '../providers/pin_provider.dart';
 import 'pin_setup_sheet.dart';
 
@@ -18,9 +18,9 @@ Future<void> showPinPromptDialog(BuildContext context, WidgetRef ref) async {
     builder: (dialogContext) => AlertDialog(
       icon: Icon(Icons.lock_outline_rounded, color: Theme.of(dialogContext).colorScheme.primary),
       title: const Text('Add a PIN for extra security?'),
-      content: const Text(
+      content: Text(
         'A 4-digit PIN keeps your academic record private if someone else picks up your phone.',
-        style: TextStyle(color: OnboardingLightPalette.secondaryText),
+        style: TextStyle(color: context.palette.secondaryText),
       ),
       actions: [
         TextButton(

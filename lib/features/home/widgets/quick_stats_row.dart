@@ -13,7 +13,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_palette.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../domain/engine/cgpa_engine.dart';
 import '../../../domain/models/course_result.dart';
 
@@ -52,7 +51,7 @@ class QuickStatsRow extends StatelessWidget {
             border: Border.all(color: Colors.white.withValues(alpha: 0.65), width: 1.3),
             boxShadow: [
               BoxShadow(
-                color: OnboardingLightPalette.bodyText.withValues(alpha: 0.12),
+                color: context.palette.bodyText.withValues(alpha: 0.12),
                 blurRadius: 28,
                 offset: const Offset(0, 12),
               ),
@@ -65,7 +64,7 @@ class QuickStatsRow extends StatelessWidget {
                   Container(
                     width: 1,
                     height: 34,
-                    color: OnboardingLightPalette.searchBorder,
+                    color: context.palette.surfaceBorder,
                   ),
                 Expanded(child: _StatCell(cells[i])),
               ],
@@ -93,8 +92,8 @@ class _StatCell extends StatelessWidget {
           data.value,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: OnboardingLightPalette.bodyText,
+          style: TextStyle(
+            color: context.palette.bodyText,
             fontSize: 16.5,
             fontWeight: FontWeight.w800,
             height: 1.1,
@@ -105,7 +104,7 @@ class _StatCell extends StatelessWidget {
           data.label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 11, height: 1.1),
+          style: TextStyle(color: context.palette.secondaryText, fontSize: 11, height: 1.1),
         ),
       ],
     );

@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_palette.dart';
 import '../providers/pin_provider.dart';
 import '../widgets/pin_pad.dart';
 
@@ -69,7 +69,7 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
     final canUseBiometrics = ref.watch(pinProvider.select((s) => s.canUseBiometrics));
 
     return Scaffold(
-      backgroundColor: OnboardingLightPalette.background,
+      backgroundColor: context.palette.background,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -79,15 +79,15 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
               children: [
                 Icon(Icons.lock_rounded, size: 40, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Enter your PIN',
-                  style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 20, fontWeight: FontWeight.w700),
+                  style: TextStyle(color: context.palette.bodyText, fontSize: 20, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   _wrong ? 'Incorrect PIN. Try again.' : 'Perform+ is locked',
                   style: TextStyle(
-                    color: _wrong ? OnboardingLightPalette.error : OnboardingLightPalette.secondaryText,
+                    color: _wrong ? context.palette.error : context.palette.secondaryText,
                     fontSize: 14,
                   ),
                 ),
