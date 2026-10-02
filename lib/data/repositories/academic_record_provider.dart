@@ -91,6 +91,13 @@ class AcademicRecordController extends StateNotifier<AcademicRecord> {
     );
   }
 
+  /// Re-reads Drift and folds in whatever's there. Public so the dashboard's
+  /// pull-to-refresh can force a reload from disk — there is no remote
+  /// mirror of the academic record to sync from yet (unlike the profile
+  /// screen's `ProfileRemoteSync`), so "refresh" means "trust the local
+  /// database again," not a network round-trip.
+  Future<void> refresh() => _loadPersisted();
+
   Future<void> _loadPersisted() async {
     final repository = _repository;
     final schemeRepository = _schemeRepository;
@@ -122,6 +129,16 @@ class AcademicRecordController extends StateNotifier<AcademicRecord> {
       scheme: state.scheme,
     );
     unawaited(_repository?.updateSemester(updated));
+  }
+
+  /// Used by the settings screen's Institution and Grading scheme rows --
+  /// changing either re-resolves the scheme every subsequent CGPA
+  /// computation reads (`standingProvider` derives from this state), so a
+  /// caller must recompute and show the before/after delta itself (see
+  /// `CgpaEngine.recalculate`) rather than assuming this is silent.
+  void updateScheme(GradingScheme scheme) {
+    state = AcademicRecord(semesters: state.semesters, scheme: scheme);
+    unawaited(_schemeRepository?.saveActiveScheme(scheme));
   }
 
   void removeSemester(String id) {

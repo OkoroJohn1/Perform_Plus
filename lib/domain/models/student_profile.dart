@@ -11,6 +11,16 @@ class StudentProfile {
   final int entryYear;
   final int expectedGraduationYear;
 
+  /// Optional — most institutions' faculty lists aren't catalogued yet
+  /// (see `data/seed/nigerian_institutions.dart`), so this stays free-form
+  /// and nullable rather than forcing a value out of nothing.
+  final String? faculty;
+
+  /// Local file path to the (optional) profile photo — never a URL. See
+  /// `profile_photo_store.dart` for how it gets there; a remote copy is a
+  /// separate concern (Supabase Storage) synced only when a session exists.
+  final String? photoPath;
+
   const StudentProfile({
     required this.fullName,
     required this.regNumber,
@@ -18,6 +28,8 @@ class StudentProfile {
     required this.currentLevel,
     required this.entryYear,
     required this.expectedGraduationYear,
+    this.faculty,
+    this.photoPath,
   });
 
   String get initials {
@@ -33,6 +45,8 @@ class StudentProfile {
     int? currentLevel,
     int? entryYear,
     int? expectedGraduationYear,
+    String? faculty,
+    String? photoPath,
   }) =>
       StudentProfile(
         fullName: fullName ?? this.fullName,
@@ -42,6 +56,8 @@ class StudentProfile {
         entryYear: entryYear ?? this.entryYear,
         expectedGraduationYear:
             expectedGraduationYear ?? this.expectedGraduationYear,
+        faculty: faculty ?? this.faculty,
+        photoPath: photoPath ?? this.photoPath,
       );
 }
 
@@ -53,4 +69,29 @@ int semestersRemainingFor(StudentProfile profile) {
   final yearsRemaining = profile.expectedGraduationYear - currentYear;
   if (yearsRemaining <= 0) return 0;
   return yearsRemaining * AppConstants.semestersPerLevel;
+}
+
+/// The profile-setup form's live "That's N semesters remaining" sanity
+/// check — distinct from [semestersRemainingFor], which answers "as of
+/// today" for the goal/roadmap engine. This one answers "given the
+/// programme implied by these three fields", so a student can catch a
+/// mistyped year before it silently distorts every later projection.
+///
+/// Total programme semesters = (gradYear - entryYear) * 2. Semesters
+/// already behind the student = levels completed before [currentLevel]
+/// (0 for 100L, 1 for 200L, ... ) * 2. Never negative — a nonsensical
+/// input (e.g. graduation before entry) floors at zero rather than
+/// returning a confusing negative count; the form surfaces that case as
+/// a validation warning instead, not through this number.
+int remainingSemestersFromLevel({
+  required int currentLevel,
+  required int entryYear,
+  required int expectedGraduationYear,
+}) {
+  final totalSemesters =
+      (expectedGraduationYear - entryYear) * AppConstants.semestersPerLevel;
+  final levelsCompleted = ((currentLevel - 100) / 100).floor();
+  final semestersCompleted = levelsCompleted * AppConstants.semestersPerLevel;
+  final remaining = totalSemesters - semestersCompleted;
+  return remaining < 0 ? 0 : remaining;
 }

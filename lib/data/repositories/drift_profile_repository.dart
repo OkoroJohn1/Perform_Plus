@@ -2,6 +2,8 @@
 /// row key internally — it never leaks into the interface.
 library;
 
+import 'package:drift/drift.dart';
+
 import '../../core/constants/app_constants.dart';
 import '../../domain/models/student_profile.dart';
 import '../../domain/repositories/profile_repository.dart';
@@ -24,6 +26,8 @@ class DriftProfileRepository implements ProfileRepository {
       currentLevel: row.currentLevel,
       entryYear: row.entryYear,
       expectedGraduationYear: row.expectedGraduationYear,
+      faculty: row.faculty,
+      photoPath: row.photoPath,
     );
   }
 
@@ -37,6 +41,8 @@ class DriftProfileRepository implements ProfileRepository {
           currentLevel: profile.currentLevel,
           entryYear: profile.entryYear,
           expectedGraduationYear: profile.expectedGraduationYear,
+          faculty: Value(profile.faculty),
+          photoPath: Value(profile.photoPath),
           updatedAt: DateTime.now(),
         ),
       );

@@ -13,3 +13,10 @@ ios/Pods/
 android/.gradle/
 
 .env
+
+# Unverified institution crest images gathered while researching which
+# logos (if any) were legally clearable to bundle -- see
+# `Institution.logoAsset`'s doc comment. Only FUTO's cleared wordmark is an
+# actual app asset (assets/institutions/futo.svg); these are the other
+# researched-and-rejected crests and must never enter version control.
+School logos/

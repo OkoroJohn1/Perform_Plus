@@ -12,6 +12,8 @@ class Profiles extends Table {
   IntColumn get currentLevel => integer()();
   IntColumn get entryYear => integer()();
   IntColumn get expectedGraduationYear => integer()();
+  TextColumn get faculty => text().nullable()();
+  TextColumn get photoPath => text().nullable()();
   TextColumn get activeSchemeId => text().nullable()();
   DateTimeColumn get updatedAt => dateTime()();
 

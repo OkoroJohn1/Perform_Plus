@@ -5,6 +5,8 @@
 /// so the draft survives to be attached to an account at signup.
 library;
 
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -64,6 +66,11 @@ class OnboardingDraft {
   final List<DraftResultRow> rows;
   final Semester? committed;
 
+  /// The course registration slip photo, kept as a local visual reference
+  /// while the student types — see `add_first_results_screen.dart`'s doc
+  /// comment on why extraction isn't wired up yet. Never uploaded anywhere.
+  final Uint8List? slipImageBytes;
+
   const OnboardingDraft({
     required this.institutionId,
     required this.scheme,
@@ -72,6 +79,7 @@ class OnboardingDraft {
     required this.term,
     required this.rows,
     this.committed,
+    this.slipImageBytes,
   });
 
   bool get hasFlaggedRows => rows.any((r) => r.needsReview);
@@ -106,14 +114,16 @@ class OnboardingDraft {
         term: term ?? this.term,
         rows: rows ?? this.rows,
         committed: committed ?? this.committed,
+        slipImageBytes: slipImageBytes,
       );
 }
 
 class OnboardingDraftNotifier extends StateNotifier<OnboardingDraft> {
   OnboardingDraftNotifier()
       : super(OnboardingDraft(
-          // FUTO-only for now — no institution picker. See AGENTS.md's
-          // "Open questions" for the one-institution-at-launch rationale.
+          // FUTO is the launch institution and pre-selected on the
+          // institution setup screen, but the picker there can change this
+          // before any result is entered. See AGENTS.md's "Open questions".
           institutionId: 'futo',
           scheme: defaultSchemes['futo']!,
           session: _currentSession(),
@@ -136,6 +146,22 @@ class OnboardingDraftNotifier extends StateNotifier<OnboardingDraft> {
   }
 
   void setScheme(GradingScheme scheme) => state = state.copyWith(scheme: scheme);
+
+  /// Bypasses [OnboardingDraft.copyWith] deliberately — that method's `??`
+  /// pattern can only ever replace the image, never clear it back to null
+  /// (discarding a photo to reselect one).
+  void setSlipImage(Uint8List? bytes) {
+    state = OnboardingDraft(
+      institutionId: state.institutionId,
+      scheme: state.scheme,
+      session: state.session,
+      level: state.level,
+      term: state.term,
+      rows: state.rows,
+      committed: state.committed,
+      slipImageBytes: bytes,
+    );
+  }
 
   void setSemesterContext({String? session, int? level, SemesterTerm? term}) {
     state = state.copyWith(session: session, level: level, term: term);

@@ -44,6 +44,9 @@ class DriftGradingSchemeRepository implements GradingSchemeRepository {
         repeatPolicy: scheme.repeatPolicy,
         repeatCapPoint: Value(scheme.repeatCapPoint),
         isCustom: Value(scheme.isCustom),
+        isVerified: Value(scheme.isVerified),
+        firstTermLabel: Value(scheme.firstTermLabel),
+        secondTermLabel: Value(scheme.secondTermLabel),
       ),
     );
 
@@ -89,5 +92,8 @@ class DriftGradingSchemeRepository implements GradingSchemeRepository {
         repeatPolicy: row.repeatPolicy,
         repeatCapPoint: row.repeatCapPoint,
         isCustom: row.isCustom,
+        isVerified: row.isVerified,
+        firstTermLabel: row.firstTermLabel,
+        secondTermLabel: row.secondTermLabel,
       );
 }

@@ -17,11 +17,13 @@ import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/sign_in_screen.dart';
 import '../../features/auth/screens/profile_setup_screen.dart';
 import '../../features/home/screens/dashboard_screen.dart';
+import '../../features/home/screens/notifications_panel.dart';
 import '../../features/me/screens/me_shell.dart';
 import '../../features/onboarding/screens/add_first_results_screen.dart';
 import '../../features/onboarding/screens/backfill_screen.dart';
 import '../../features/onboarding/screens/goal_setting_screen.dart';
 import '../../features/onboarding/screens/gpa_reveal_screen.dart';
+import '../../features/onboarding/screens/institution_setup_screen.dart';
 import '../../features/onboarding/screens/splash_screen.dart';
 import '../../features/study/screens/study_shell.dart';
 import '../../shared/widgets/app_scaffold.dart';
@@ -30,15 +32,33 @@ import 'routes.dart';
 final _rootKey = GlobalKey<NavigatorState>();
 final _shellKey = GlobalKey<NavigatorState>();
 
+/// Bridges `authStateProvider` changes into go_router's own refresh
+/// mechanism. `routerProvider` used to `ref.watch(authStateProvider)`
+/// directly, which rebuilt a brand new `GoRouter` — a stateful object that
+/// owns the whole navigation stack — on every auth change, including the
+/// transient `loading` state set at the start of every sign-in/up attempt.
+/// Each new router resets to `initialLocation`, so the sign-in screen was
+/// torn down and replaced by a splash-screen flash the instant its button
+/// was pressed, on every attempt, success or failure. `refreshListenable`
+/// instead tells the SAME long-lived router to just re-run `redirect` for
+/// the current location.
+class _AuthRefreshNotifier extends ChangeNotifier {
+  _AuthRefreshNotifier(Ref ref) {
+    ref.listen(authStateProvider, (_, __) => notifyListeners());
+  }
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
-  final auth = ref.watch(authStateProvider);
+  final refresh = _AuthRefreshNotifier(ref);
 
   return GoRouter(
     navigatorKey: _rootKey,
     initialLocation: Routes.splash,
     debugLogDiagnostics: true,
+    refreshListenable: refresh,
 
     redirect: (context, state) {
+      final auth = ref.read(authStateProvider);
       final loc = state.matchedLocation;
 
       // Act 1 is deliberately open. No redirect logic applies here.
@@ -72,6 +92,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         return Routes.profileSetup;
       }
 
+      // Profile Setup is only step 2 of Act 2's three screens (Backfill and
+      // Goal Setting follow it) -- both of those live under `/onboarding/`
+      // and are exempt via `isPreAuth` above, so this only ever fires for
+      // an attempt to reach the tab shell. Without this, backgrounding or
+      // killing the app between Profile Setup and Goal Setting stranded a
+      // student in the tab shell forever on the next launch, since nothing
+      // else re-routed them back through Backfill/Goal Setting.
+      final onboardingComplete = auth.value!.onboardingComplete;
+      if (profileComplete && !onboardingComplete) {
+        return Routes.backfill;
+      }
+
       return null;
     },
 
@@ -80,6 +112,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.splash,
         builder: (_, __) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: Routes.institutionSetup,
+        builder: (_, __) => const InstitutionSetupScreen(),
       ),
       GoRoute(
         path: Routes.addFirstResults,
@@ -97,7 +133,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: Routes.profileSetup,
-        builder: (_, __) => const ProfileSetupScreen(),
+        builder: (_, state) => ProfileSetupScreen(isEditMode: state.extra == true),
       ),
       GoRoute(
         path: Routes.backfill,
@@ -135,6 +171,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: Routes.me,
             builder: (_, __) => const MeShell(),
+          ),
+          // Reachable from the header bell on every tab except Me. Nested
+          // under this same ShellRoute (not a separate top-level route) so
+          // AppScaffold — and its bottom nav — stays mounted underneath;
+          // see AppScaffold's own doc comment on how it keeps the
+          // originating tab highlighted while this route has no tab of
+          // its own.
+          GoRoute(
+            path: Routes.notifications,
+            builder: (_, __) => const NotificationsPanel(),
           ),
         ],
       ),

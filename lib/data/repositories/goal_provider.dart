@@ -28,9 +28,14 @@ class GoalController extends StateNotifier<GoalTarget?> {
     if (persisted != null) state = persisted;
   }
 
-  void save(GoalTarget goal) {
+  /// Awaits the local Drift write (so a caller can show a genuine loading
+  /// state and time it out) rather than firing it and forgetting. There is
+  /// no remote `goals` table in the current Supabase schema to sync to —
+  /// unlike the profile screen's `ProfileRemoteSync`, this deliberately
+  /// does not invent one. Add a remote mirror here once that table exists.
+  Future<void> save(GoalTarget goal) async {
     state = goal;
-    unawaited(_repository.saveGoal(goal));
+    await _repository.saveGoal(goal);
   }
 
   void clear() {

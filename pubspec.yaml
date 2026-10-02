@@ -32,16 +32,92 @@ dependencies:
   # Charts
   fl_chart: ^0.68.0
 
+  # App-wide type — Plus Jakarta Sans, applied once in app_theme.dart so
+  # every screen's existing TextStyle calls (which set size/weight/color but
+  # never fontFamily) pick it up through DefaultTextStyle inheritance.
+  google_fonts: ^6.2.1
+
   # Result slip import
   image_picker: ^1.1.2
+
+  # Crop/resize/re-encode a picked profile photo before it ever touches
+  # disk or a network call — a raw phone photo is several MB for something
+  # displayed at 128dp.
+  image: ^4.2.0
+
+  # Offline detection for the slip-extraction upload flow — never spin
+  # waiting on a call that has no chance of reaching the network.
+  connectivity_plus: ^6.0.5
 
   # Backend. Supabase gives auth + Postgres + storage + RLS in one.
   # Enforce Row Level Security from day one; academic records are sensitive.
   supabase_flutter: ^2.5.6
 
+  # Native Google sign-in on Android/iOS — the OS account picker, not a
+  # browser redirect. Avoids Google's "unverified app" security-challenge
+  # screen entirely, and is how most apps actually do this. Web keeps the
+  # browser-redirect flow instead (see auth_provider.dart).
+  google_sign_in: ^6.2.2
+
+  # Loads SUPABASE_URL / SUPABASE_ANON_KEY from .env at startup — never
+  # hardcode keys in source.
+  flutter_dotenv: ^6.0.1
+
+  # Remembers the last signed-in email on this device (sign-in screen
+  # default-mode detection) — never account credentials themselves.
+  flutter_secure_storage: ^11.0.0
+
   # PDF reports
   pdf: ^3.11.0
   printing: ^5.13.0
+  sign_in_button: ^5.0.0
+  package_info_plus: ^10.2.1
+
+  # E-notes reader: rasterises PDF pages to images (pdfx), lets a student
+  # pick a PDF/image/scan a page (file_picker on top of image_picker, which
+  # is already a dependency above), and keeps the screen on while a page's
+  # dwell timer is running (wakelock_plus).
+  pdfx: ^2.6.0
+  file_picker: ^12.0.0
+  wakelock_plus: ^1.2.8
+
+  # Notifications: permission_handler checks/requests the system
+  # notification permission (drives the panel's permission-aware hero
+  # banner); flutter_local_notifications delivers the two purely
+  # time-based reminders (study reminder, streak-at-risk) offline, since
+  # no push/FCM backend exists.
+  permission_handler: ^11.3.1
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
+
+  # Settings screen's "Export your data" hands the JSON file to the
+  # system share sheet rather than just writing it silently to disk.
+  share_plus: ^13.3.0
+
+  # Renders the one verified-freely-licensed institution logo (FUTO's
+  # PD-textlogo wordmark, assets/institutions/) — see Institution.logoAsset's
+  # doc comment for why every other institution still falls back to
+  # LettermarkAvatar instead of a real crest.
+  flutter_svg: ^2.0.10+1
+
+  # Crash/error reporting. Inert until SENTRY_DSN is set in .env -- see
+  # main.dart's doc comment. Pinned >=9.0.0, not 8.x: 8.14.2's bundled
+  # android/build.gradle hardcodes `kotlinOptions.languageVersion = "1.6"`,
+  # which this project's Kotlin 2.3.20/AGP 9 toolchain's compiler no longer
+  # accepts at all ("Language version 1.6 is no longer supported") --
+  # 9.28.0 dropped that override and added its own AGP-9-built-in-Kotlin
+  # handling instead.
+  sentry_flutter: ^9.0.0
+
+  # Hashing the app-lock PIN (features/auth/services/pin_service.dart) --
+  # already pulled in transitively; declared directly since our own code
+  # imports it now, not just a dependency's internals.
+  crypto: ^3.0.5
+
+  # Fingerprint/face unlock, offered alongside (never instead of) the PIN --
+  # the PIN stays the fallback whenever biometrics are unavailable, not
+  # enrolled, or the prompt is cancelled.
+  local_auth: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -55,14 +131,25 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/institutions/
+    - .env
 
 flutter_launcher_icons:
   android: true
   ios: false
   web:
     generate: true
-    background_color: "#0B0A18"
-    theme_color: "#0B0A18"
+    background_color: "#0A0A48"
+    theme_color: "#0A0A48"
   image_path: "assets/images/app_icon.png"
-  adaptive_icon_background: "#0B0A18"
-  adaptive_icon_foreground: "assets/images/app_icon.png"
+  # `app_icon.png` is the full square mark (its own gradient background
+  # baked in) -- correct for the legacy/non-adaptive icon, but wrong as an
+  # adaptive-icon foreground layer (Android composites the foreground over
+  # `adaptive_icon_background` and then clips both to its own mask shape;
+  # a foreground with its own baked-in rounded-square background would
+  # double up and clip oddly under a circular/squircle mask). The
+  # adaptive foreground below is the same glyph alone, transparent,
+  # centred and padded to Android's safe zone -- `adaptive_icon_background`
+  # is the logo's own backdrop colour, sampled from the source image.
+  adaptive_icon_background: "#0A0A48"
+  adaptive_icon_foreground: "assets/images/app_icon_foreground.png"

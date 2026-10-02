@@ -1,13 +1,15 @@
-/// The official Perform+ mark — icon + "Perform+" wordmark baked into one
-/// asset (`assets/images/logo.png`), glow and all. Used everywhere the app
-/// shows its brand identity.
+/// The official Perform+ mark — the "P" glyph alone, transparent background
+/// (`assets/images/logo.png`), used everywhere the app shows its brand
+/// identity. Screens that also need the "Perform+" wordmark (the splash
+/// screen) render that separately as text, since it isn't baked into this
+/// asset.
 library;
 
 import 'package:flutter/material.dart';
 
-/// Aspect ratio of the source asset (1536x1024) — used so callers can size
-/// by width alone and get a correctly proportioned mark.
-const double _logoAspectRatio = 1536 / 1024;
+/// Aspect ratio of the source asset — used so callers can size by width
+/// alone and get a correctly proportioned mark.
+const double _logoAspectRatio = 785 / 861;
 
 class AppLogo extends StatelessWidget {
   /// Rendered width. Height follows the source asset's aspect ratio.

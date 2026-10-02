@@ -13,6 +13,8 @@ library;
 
 import 'package:collection/collection.dart';
 
+import 'course_result.dart' show SemesterTerm;
+
 /// How an institution treats a repeated (previously failed) course.
 enum RepeatPolicy {
   /// Original failure is removed entirely. Only the new attempt counts.
@@ -119,6 +121,23 @@ class GradingScheme {
   /// Whether this scheme was hand-entered by the user rather than seeded.
   final bool isCustom;
 
+  /// Whether the four separable concerns (score->letter, letter->point,
+  /// classification bands, repeat policy) have actually been confirmed
+  /// against the institution's current student handbook/registry, rather
+  /// than being a reasonable-default guess. False for every seeded scheme
+  /// except FUTO's — see `data/seed/nigerian_institutions.dart`. A wrong
+  /// repeat policy in particular produces a plausible-looking wrong CGPA,
+  /// so the UI must surface this rather than presenting every scheme as
+  /// equally authoritative.
+  final bool isVerified;
+
+  /// Institution-specific display names for the two semesters — most use
+  /// "First/Second Semester", but FUTO calls them Harmattan and Rain.
+  /// `SemesterTerm` itself stays first/second internally regardless; these
+  /// are presentation-only. See [termLabel].
+  final String firstTermLabel;
+  final String secondTermLabel;
+
   const GradingScheme({
     required this.id,
     required this.institutionId,
@@ -132,7 +151,17 @@ class GradingScheme {
     required this.repeatPolicy,
     this.repeatCapPoint,
     this.isCustom = false,
+    this.isVerified = true,
+    this.firstTermLabel = 'First Semester',
+    this.secondTermLabel = 'Second Semester',
   });
+
+  /// Display label for a term under this scheme's naming — e.g. FUTO's
+  /// Harmattan/Rain rather than the generic First/Second Semester.
+  String termLabel(SemesterTerm term) => switch (term) {
+        SemesterTerm.first => firstTermLabel,
+        SemesterTerm.second => secondTermLabel,
+      };
 
   /// Resolve a letter grade to its point value.
   /// Returns null for an unrecognised letter rather than defaulting to 0 —
@@ -233,6 +262,9 @@ class GradingScheme {
     RepeatPolicy? repeatPolicy,
     double? repeatCapPoint,
     bool? isCustom,
+    bool? isVerified,
+    String? firstTermLabel,
+    String? secondTermLabel,
   }) =>
       GradingScheme(
         id: id,
@@ -247,6 +279,9 @@ class GradingScheme {
         repeatPolicy: repeatPolicy ?? this.repeatPolicy,
         repeatCapPoint: repeatCapPoint ?? this.repeatCapPoint,
         isCustom: isCustom ?? this.isCustom,
+        isVerified: isVerified ?? this.isVerified,
+        firstTermLabel: firstTermLabel ?? this.firstTermLabel,
+        secondTermLabel: secondTermLabel ?? this.secondTermLabel,
       );
 
   Map<String, dynamic> toJson() => {
@@ -262,6 +297,9 @@ class GradingScheme {
         'repeatPolicy': repeatPolicy.name,
         'repeatCapPoint': repeatCapPoint,
         'isCustom': isCustom,
+        'isVerified': isVerified,
+        'firstTermLabel': firstTermLabel,
+        'secondTermLabel': secondTermLabel,
       };
 
   factory GradingScheme.fromJson(Map<String, dynamic> json) => GradingScheme(
@@ -284,5 +322,9 @@ class GradingScheme {
             .firstWhere((p) => p.name == json['repeatPolicy']),
         repeatCapPoint: (json['repeatCapPoint'] as num?)?.toDouble(),
         isCustom: json['isCustom'] as bool? ?? false,
+        isVerified: json['isVerified'] as bool? ?? true,
+        firstTermLabel: json['firstTermLabel'] as String? ?? 'First Semester',
+        secondTermLabel:
+            json['secondTermLabel'] as String? ?? 'Second Semester',
       );
 }

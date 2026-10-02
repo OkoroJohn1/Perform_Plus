@@ -115,6 +115,76 @@ void main() {
       expect(loaded, hasLength(1));
       expect(loaded.single.id, 's1');
     });
+
+    // The sign-up handoff (`AuthNotifier._stateFor` calls this on every
+    // successful auth resolution): a semester committed during pre-auth
+    // onboarding, still keyed to the placeholder profile id, must survive
+    // being re-keyed to the real auth uid — and remain loadable afterwards,
+    // since `loadSemesters()` no longer filters by profile id at all (see
+    // its doc comment). If either half of that regresses, a student who
+    // signs up loses the result they just computed.
+    test('reassignProfile moves a pre-auth semester to the real auth uid, '
+        'and it stays loadable afterwards', () async {
+      final repo = DriftAcademicRecordRepository(db.semesterDao, db.courseResultDao);
+      await repo.addSemester(_semester('s1')); // profileId: 'local-profile'
+
+      await repo.reassignProfile('local-profile', 'auth-uid-123');
+
+      final loaded = await repo.loadSemesters();
+      expect(loaded, hasLength(1));
+      expect(loaded.single.id, 's1');
+      expect(loaded.single.profileId, 'auth-uid-123');
+    });
+
+    test('reassignProfile is a harmless no-op when there is nothing to move',
+        () async {
+      final repo = DriftAcademicRecordRepository(db.semesterDao, db.courseResultDao);
+
+      await repo.reassignProfile('local-profile', 'auth-uid-123');
+
+      expect(await repo.loadSemesters(), isEmpty);
+    });
+
+    test('hasSemestersForProfile is true only once a semester exists under that profile',
+        () async {
+      final repo = DriftAcademicRecordRepository(db.semesterDao, db.courseResultDao);
+      expect(await repo.hasSemestersForProfile('local-profile'), isFalse);
+
+      await repo.addSemester(_semester('s1')); // profileId: 'local-profile'
+
+      expect(await repo.hasSemestersForProfile('local-profile'), isTrue);
+      expect(await repo.hasSemestersForProfile('auth-uid-123'), isFalse);
+    });
+
+    // The exact scenario `AuthNotifier._stateFor` guards against: a
+    // returning user's account already has real semesters on this device,
+    // and a stray pre-auth draft (from mistakenly repeating onboarding)
+    // must be dropped, not merged in as duplicates.
+    test('discardProfile deletes every semester and course result under that '
+        'profile, leaving other profiles untouched', () async {
+      final repo = DriftAcademicRecordRepository(db.semesterDao, db.courseResultDao);
+      await repo.addSemester(_semester('draft-1')); // profileId: 'local-profile'
+      await repo.addSemester(
+        Semester(
+          id: 'real-1',
+          profileId: 'auth-uid-123',
+          session: '2023/2024',
+          term: SemesterTerm.first,
+          level: 100,
+          results: [_result('MTH101', semesterId: 'real-1')],
+          createdAt: _now,
+          updatedAt: _now,
+        ),
+      );
+
+      await repo.discardProfile('local-profile');
+
+      final loaded = await repo.loadSemesters();
+      expect(loaded, hasLength(1));
+      expect(loaded.single.id, 'real-1');
+      expect(loaded.single.results, hasLength(1));
+      expect(await repo.hasSemestersForProfile('local-profile'), isFalse);
+    });
   });
 
   group('DriftProfileRepository', () {

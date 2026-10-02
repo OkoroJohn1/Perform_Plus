@@ -11,16 +11,28 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../domain/repositories/academic_record_repository.dart';
+import '../../domain/repositories/achievement_repository.dart';
+import '../../domain/repositories/calendar_repository.dart';
 import '../../domain/repositories/goal_repository.dart';
 import '../../domain/repositories/grading_scheme_repository.dart';
+import '../../domain/repositories/note_repository.dart';
+import '../../domain/repositories/notification_repository.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../local/app_database.dart';
 import 'drift_academic_record_repository.dart';
+import 'drift_achievement_repository.dart';
+import 'drift_calendar_repository.dart';
 import 'drift_goal_repository.dart';
 import 'drift_grading_scheme_repository.dart';
+import 'drift_note_repository.dart';
+import 'drift_notification_repository.dart';
 import 'drift_profile_repository.dart';
+import 'note_remote_sync.dart';
+import 'profile_photo_remote_sync.dart';
+import 'profile_remote_sync.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -44,4 +56,57 @@ final goalRepositoryProvider = Provider<GoalRepository>(
 final gradingSchemeRepositoryProvider = Provider<GradingSchemeRepository>((ref) {
   final db = ref.watch(appDatabaseProvider);
   return DriftGradingSchemeRepository(db.gradingSchemeDao, db.profileDao);
+});
+
+final noteRepositoryProvider = Provider<NoteRepository>(
+  (ref) => DriftNoteRepository(ref.watch(appDatabaseProvider).noteDao),
+);
+
+final achievementRepositoryProvider = Provider<AchievementRepository>(
+  (ref) => DriftAchievementRepository(ref.watch(appDatabaseProvider).achievementDao),
+);
+
+final calendarRepositoryProvider = Provider<CalendarRepository>(
+  (ref) => DriftCalendarRepository(ref.watch(appDatabaseProvider).calendarMarkDao),
+);
+
+final notificationRepositoryProvider = Provider<NotificationRepository>(
+  (ref) => DriftNotificationRepository(ref.watch(appDatabaseProvider).notificationDao),
+);
+
+/// A generic key-value DAO, not a domain concept -- exposed directly
+/// rather than wrapped in a repository interface like the rest of this
+/// file, since there's nothing here for a fake implementation to abstract
+/// over. See `theme_mode_provider.dart`, its only consumer.
+final localSettingsDaoProvider = Provider((ref) => ref.watch(appDatabaseProvider).localSettingsDao);
+
+final profileRemoteSyncProvider = Provider<ProfileRemoteSync>(
+  (ref) => SupabaseProfileRemoteSync(Supabase.instance.client),
+);
+
+/// `null` when Supabase was never initialized -- every plain `flutter test`
+/// run, since `Supabase.instance.client` throws synchronously rather than
+/// surfacing as an awaitable error the way an uninitialized
+/// `AsyncNotifierProvider` does. `notesProvider` (a widely-depended-on
+/// provider touched by many unrelated widget tests) watches this
+/// unconditionally, so it must never throw just because a test has no
+/// reason to care about Supabase at all.
+final noteRemoteSyncProvider = Provider<NoteRemoteSync?>((ref) {
+  try {
+    return SupabaseNoteRemoteSync(Supabase.instance.client);
+  } catch (_) {
+    return null;
+  }
+});
+
+/// Same "`null` when Supabase was never initialized" guard as
+/// [noteRemoteSyncProvider] above -- `profileProvider`'s controller reads
+/// this on every cold start (to check whether a locally-missing photo file
+/// can be restored), so it must never throw in a plain `flutter test` run.
+final profilePhotoRemoteSyncProvider = Provider<ProfilePhotoRemoteSync?>((ref) {
+  try {
+    return SupabaseProfilePhotoRemoteSync(Supabase.instance.client);
+  } catch (_) {
+    return null;
+  }
 });

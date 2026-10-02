@@ -1,11 +1,23 @@
+/// Reports — rebuilt onto the same light `#F7F7FB`/`OnboardingLightPalette`
+/// surface as the rest of the Academics tab (see `results_view.dart`).
+///
+/// ⚠ FIXED: like `roadmap_view.dart`, this screen used to read
+/// `Theme.of(context)` and `GlassCard` (tuned for the app's old dark-glass
+/// theme) while sitting on `academics_shell.dart`'s light background --
+/// producing dim, low-contrast text and cards that didn't match the rest of
+/// the tab. Every colour here is hardcoded to `OnboardingLightPalette`.
+///
+/// PDF export isn't wired up yet (see AGENTS.md) -- "Generate report" stays
+/// an honest, clearly-labelled stub rather than a button that silently does
+/// nothing.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/app_palette.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../data/repositories/academic_record_provider.dart';
-import '../../../shared/widgets/empty_state.dart';
-import '../../../shared/widgets/glass_card.dart';
-import '../../../shared/widgets/locked_feature_row.dart';
-import '../../../shared/widgets/section_header.dart';
 
 class ReportsView extends ConsumerWidget {
   const ReportsView({super.key});
@@ -15,67 +27,114 @@ class ReportsView extends ConsumerWidget {
     final standing = ref.watch(standingProvider);
 
     if (!standing.hasData) {
-      return const EmptyState(
-        icon: Icons.description_outlined,
-        title: 'No reports yet',
-        message: 'Add results to generate an academic summary.',
-      );
+      return const _EmptyReports();
     }
 
     final trend = standing.recentTrend();
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SectionHeader(
-            title: 'Reports',
-            action: 'Generate New Report',
-            onAction: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Report generation isn\'t available yet.')),
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Reports',
+                style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 22, fontWeight: FontWeight.w700),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: ListView(
-              children: [
-                _ReportCard(
-                  icon: Icons.summarize_outlined,
-                  title: 'Academic Summary',
-                  subtitle: 'Overall academic performance',
-                  body:
-                      '${standing.cgpa.toStringAsFixed(2)} CGPA — '
-                      '${standing.classification?.label ?? 'Not yet classified'}\n'
-                      '${standing.totalCreditUnits} total credit units',
-                ),
-                _ReportCard(
-                  icon: Icons.bar_chart_outlined,
-                  title: 'Semester Analysis',
-                  subtitle: 'Detailed semester breakdown',
-                  body: 'Best semester: ${standing.bestSemesterGpa?.toStringAsFixed(2) ?? '—'}\n'
-                      'Weakest semester: ${standing.worstSemesterGpa?.toStringAsFixed(2) ?? '—'}',
-                ),
-                _ReportCard(
-                  icon: Icons.trending_up,
-                  title: 'Performance Over Time',
-                  subtitle: 'Trends and improvements',
-                  body: trend == null
-                      ? 'Add another semester to see a trend.'
-                      : trend >= 0
-                          ? 'Up ${trend.toStringAsFixed(2)} over your recent semesters'
-                          : 'Down ${(-trend).toStringAsFixed(2)} over your recent semesters',
-                ),
-                const SizedBox(height: 8),
-                const LockedFeatureRow(
-                  icon: Icons.insights_outlined,
-                  title: 'Strength Analysis',
-                  subtitle: 'Per-course strengths and areas to improve',
-                ),
-              ],
+            _GenerateReportButton(
+              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Report export isn't available yet.")),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'A plain-language summary of your record',
+          style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14.5),
+        ),
+        const SizedBox(height: 20),
+        _ReportCard(
+          icon: Icons.summarize_outlined,
+          iconColor: context.palette.primary,
+          title: 'Academic Summary',
+          subtitle: 'Overall academic performance',
+          rows: [
+            (label: 'CGPA', value: standing.cgpa.toStringAsFixed(2)),
+            (label: 'Classification', value: standing.classification?.label ?? 'Not yet classified'),
+            (label: 'Total credit units', value: '${standing.totalCreditUnits}'),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _ReportCard(
+          icon: Icons.bar_chart_outlined,
+          iconColor: OnboardingLightPalette.success,
+          title: 'Semester Analysis',
+          subtitle: 'Detailed semester breakdown',
+          rows: [
+            (label: 'Best semester', value: standing.bestSemesterGpa?.toStringAsFixed(2) ?? '—'),
+            (label: 'Weakest semester', value: standing.worstSemesterGpa?.toStringAsFixed(2) ?? '—'),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _ReportCard(
+          icon: trend == null ? Icons.timeline_outlined : (trend >= 0 ? Icons.trending_up : Icons.trending_down),
+          iconColor: trend == null
+              ? OnboardingLightPalette.secondaryText
+              : (trend >= 0 ? OnboardingLightPalette.success : OnboardingLightPalette.amber),
+          title: 'Performance Over Time',
+          subtitle: 'Trends and improvements',
+          rows: [
+            (
+              label: 'Recent trend',
+              value: trend == null
+                  ? 'Add another semester to see a trend'
+                  : trend >= 0
+                      ? 'Up ${trend.toStringAsFixed(2)}'
+                      : 'Down ${(-trend).toStringAsFixed(2)}',
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        const _LockedReportRow(
+          icon: Icons.insights_outlined,
+          title: 'Strength Analysis',
+          subtitle: 'Per-course strengths and areas to improve',
+        ),
+      ],
+    );
+  }
+}
+
+class _GenerateReportButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _GenerateReportButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: context.palette.primary.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.picture_as_pdf_outlined, size: 16, color: context.palette.primary),
+            const SizedBox(width: 6),
+            Text(
+              'Generate',
+              style: TextStyle(color: context.palette.primary, fontSize: 14, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -83,44 +142,164 @@ class ReportsView extends ConsumerWidget {
 
 class _ReportCard extends StatelessWidget {
   final IconData icon;
+  final Color iconColor;
   final String title;
   final String subtitle;
-  final String body;
+  final List<({String label, String value})> rows;
 
   const _ReportCard({
     required this.icon,
+    required this.iconColor,
     required this.title,
     required this.subtitle,
-    required this.body,
+    required this.rows,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GlassCard(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              backgroundColor: theme.colorScheme.primaryContainer,
-              child: Icon(icon, color: theme.colorScheme.onPrimaryContainer),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, size: 21, color: iconColor),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 16.5, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFECECF1)),
+          const SizedBox(height: 12),
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0) const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(rows[i].label, style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 14)),
+                Flexible(
+                  child: Text(
+                    rows[i].value,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 14.5, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _LockedReportRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _LockedReportRow({required this.icon, required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: OnboardingLightPalette.searchBorder, width: 1.2),
+      ),
+      child: Opacity(
+        opacity: 0.6,
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: OnboardingLightPalette.secondaryText.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 19, color: OnboardingLightPalette.secondaryText),
+            ),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: theme.textTheme.titleSmall),
-                  Text(subtitle,
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                  const SizedBox(height: 8),
-                  Text(body, style: theme.textTheme.bodyMedium),
+                  Text(title, style: const TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 15, fontWeight: FontWeight.w600)),
+                  Text(subtitle, style: const TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 12.5)),
                 ],
               ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: OnboardingLightPalette.secondaryText.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: const Text(
+                'V2',
+                style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 11.5, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyReports extends StatelessWidget {
+  const _EmptyReports();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.description_outlined, size: 48, color: Color(0xFFD1D5DB)),
+            const SizedBox(height: 16),
+            const Text(
+              'No reports yet',
+              style: TextStyle(color: OnboardingLightPalette.bodyText, fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Add results to generate an academic summary.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: OnboardingLightPalette.secondaryText, fontSize: 15.5),
             ),
           ],
         ),

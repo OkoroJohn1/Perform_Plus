@@ -27,6 +27,11 @@ class GradingSchemes extends Table {
   TextColumn get repeatPolicy => textEnum<RepeatPolicy>()();
   RealColumn get repeatCapPoint => real().nullable()();
   BoolColumn get isCustom => boolean().withDefault(const Constant(false))();
+  BoolColumn get isVerified => boolean().withDefault(const Constant(true))();
+  TextColumn get firstTermLabel =>
+      text().withDefault(const Constant('First Semester'))();
+  TextColumn get secondTermLabel =>
+      text().withDefault(const Constant('Second Semester'))();
 
   @override
   Set<Column> get primaryKey => {id};

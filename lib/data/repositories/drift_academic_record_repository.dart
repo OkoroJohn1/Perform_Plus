@@ -6,7 +6,6 @@ library;
 import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
 
-import '../../core/constants/app_constants.dart';
 import '../../domain/models/course_result.dart';
 import '../../domain/repositories/academic_record_repository.dart';
 import '../local/app_database.dart';
@@ -21,8 +20,7 @@ class DriftAcademicRecordRepository implements AcademicRecordRepository {
 
   @override
   Future<List<Semester>> loadSemesters() async {
-    final semesterRows =
-        await _semesterDao.getSemestersForProfile(AppConstants.localProfileId);
+    final semesterRows = await _semesterDao.getAllSemesters();
     if (semesterRows.isEmpty) return const [];
 
     final ids = semesterRows.map((s) => s.id).toList();
@@ -44,6 +42,25 @@ class DriftAcademicRecordRepository implements AcademicRecordRepository {
   Future<void> removeSemester(String id) async {
     await _courseResultDao.deleteResultsForSemester(id);
     await _semesterDao.deleteSemester(id);
+  }
+
+  @override
+  Future<void> reassignProfile(String fromProfileId, String toProfileId) =>
+      _semesterDao.reassignProfile(fromProfileId, toProfileId);
+
+  @override
+  Future<bool> hasSemestersForProfile(String profileId) async {
+    final rows = await _semesterDao.getSemestersForProfile(profileId);
+    return rows.isNotEmpty;
+  }
+
+  @override
+  Future<void> discardProfile(String profileId) async {
+    final rows = await _semesterDao.getSemestersForProfile(profileId);
+    for (final row in rows) {
+      await _courseResultDao.deleteResultsForSemester(row.id);
+    }
+    await _semesterDao.deleteAllForProfile(profileId);
   }
 
   Future<void> _upsert(Semester semester) async {
