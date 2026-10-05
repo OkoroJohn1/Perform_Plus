@@ -45,6 +45,7 @@ import '../../../core/theme/theme_mode_provider.dart';
 import '../../../data/repositories/academic_record_provider.dart';
 import '../../../data/repositories/achievement_provider.dart';
 import '../../../data/repositories/goal_provider.dart';
+import '../../../shared/widgets/glass_top_bar.dart';
 import '../../../data/repositories/note_provider.dart';
 import '../../../data/repositories/repository_providers.dart';
 import '../../../data/seed/nigerian_institutions.dart';
@@ -54,7 +55,9 @@ import '../../../domain/models/grading_scheme.dart';
 import '../../../shared/widgets/badge_shield.dart';
 import '../../../shared/widgets/quick_settings_sheets.dart';
 import '../../auth/providers/pin_provider.dart';
+import '../../auth/providers/security_questions_provider.dart';
 import '../../auth/screens/pin_setup_sheet.dart';
+import '../../auth/screens/security_questions_setup_sheet.dart';
 import '../../auth/widgets/pin_pad.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/providers/profile_provider.dart';
@@ -300,8 +303,7 @@ class _MeAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: DashboardPalette.scaffoldBackground,
+    return TopBarGlassBackground(
       child: SafeArea(
         bottom: false,
         child: Padding(
@@ -879,7 +881,7 @@ void _showChangePasswordSheet(BuildContext context, WidgetRef ref) {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Colors.white,
+    backgroundColor: context.palette.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (sheetContext) => Padding(
       padding: EdgeInsets.only(
@@ -1102,7 +1104,7 @@ void _showInstitutionSheet(BuildContext context, WidgetRef ref) {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Colors.white,
+    backgroundColor: context.palette.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (sheetContext) => SafeArea(
       child: ConstrainedBox(
@@ -1187,7 +1189,7 @@ void _showGradingSchemeSheet(BuildContext context, WidgetRef ref) {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Colors.white,
+    backgroundColor: context.palette.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (sheetContext) => _GradingSchemeSheet(ref: ref),
   );
@@ -1359,7 +1361,7 @@ void _showYearsSheet(BuildContext context, WidgetRef ref, StudentProfile profile
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Colors.white,
+    backgroundColor: context.palette.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (sheetContext) => _YearsForm(ref: ref, profile: profile),
   );
@@ -1466,7 +1468,7 @@ void _showAppLockSheet(BuildContext context, WidgetRef ref, bool isSet) {
   }
   showModalBottomSheet(
     context: context,
-    backgroundColor: Colors.white,
+    backgroundColor: context.palette.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (sheetContext) => SafeArea(
       child: Column(
@@ -1482,13 +1484,33 @@ void _showAppLockSheet(BuildContext context, WidgetRef ref, bool isSet) {
               _verifyPinThenAct(context, ref, onVerified: () async => showPinSetupSheet(context));
             },
           ),
+          Divider(height: 1, color: context.palette.divider),
+          Consumer(
+            builder: (context, ref, _) {
+              final hasQuestions = ref.watch(securityQuestionsProvider.select((s) => s.hasQuestions));
+              return ListTile(
+                key: const ValueKey('securityQuestionsTap'),
+                leading: const Icon(Icons.quiz_outlined),
+                title: Text(hasQuestions ? 'Security questions' : 'Set up security questions'),
+                subtitle: const Text("Recovers your PIN if it's forgotten"),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _verifyPinThenAct(
+                    context,
+                    ref,
+                    onVerified: () async => showSecurityQuestionsSetupSheet(context),
+                  );
+                },
+              );
+            },
+          ),
           Consumer(
             builder: (context, ref, _) {
               final pinState = ref.watch(pinProvider);
               if (!pinState.biometricAvailable) return const SizedBox.shrink();
               return Column(
                 children: [
-                  const Divider(height: 1, color: Color(0xFFECECF1)),
+                  Divider(height: 1, color: context.palette.divider),
                   SwitchListTile(
                     key: const ValueKey('biometricToggle'),
                     secondary: const Icon(Icons.fingerprint),
@@ -1501,7 +1523,7 @@ void _showAppLockSheet(BuildContext context, WidgetRef ref, bool isSet) {
               );
             },
           ),
-          const Divider(height: 1, color: Color(0xFFECECF1)),
+          Divider(height: 1, color: context.palette.divider),
           Consumer(
             builder: (context, ref, _) {
               final autoLockMinutes = ref.watch(pinProvider.select((s) => s.autoLockMinutes));
@@ -1514,7 +1536,7 @@ void _showAppLockSheet(BuildContext context, WidgetRef ref, bool isSet) {
               );
             },
           ),
-          const Divider(height: 1, color: Color(0xFFECECF1)),
+          Divider(height: 1, color: context.palette.divider),
           ListTile(
             key: const ValueKey('turnOffPinTap'),
             leading: Icon(Icons.lock_open_outlined, color: context.palette.error),
@@ -1549,7 +1571,7 @@ String _autoLockLabel(int minutes) => minutes == 60 ? '1 hour' : '$minutes minut
 void _showAutoLockPicker(BuildContext context, WidgetRef ref, int current) {
   showModalBottomSheet(
     context: context,
-    backgroundColor: Colors.white,
+    backgroundColor: context.palette.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (sheetContext) => SafeArea(
       child: Column(
@@ -1585,7 +1607,7 @@ void _verifyPinThenAct(BuildContext context, WidgetRef ref, {required Future<voi
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Colors.white,
+    backgroundColor: context.palette.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (sheetContext) {
       var wrong = false;
@@ -1628,7 +1650,7 @@ void _showStorageSheet(BuildContext context, WidgetRef ref) {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Colors.white,
+    backgroundColor: context.palette.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (sheetContext) => _StorageSheet(ref: ref),
   );
@@ -1808,7 +1830,7 @@ class _DestructiveSection extends StatelessWidget {
               titleColor: const Color(0xFFDC2626),
               onTap: () => confirmSignOut(context, ref, record: record, noteCount: noteCount),
             ),
-            const Divider(height: 1, indent: 72, color: Color(0xFFECECF1)),
+            Divider(height: 1, indent: 72, color: context.palette.divider),
             _Row(
               key: const ValueKey('deleteAccountRow'),
               icon: Icons.delete_forever_outlined,
@@ -1949,7 +1971,7 @@ void _showFaqSheet(BuildContext context) {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Colors.white,
+    backgroundColor: context.palette.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (sheetContext) => SafeArea(
       child: ConstrainedBox(
@@ -1968,7 +1990,7 @@ void _showFaqSheet(BuildContext context) {
               ),
               const SizedBox(height: 16),
               for (var i = 0; i < _faqItems.length; i++) ...[
-                if (i > 0) const Divider(height: 24, color: Color(0xFFECECF1)),
+                if (i > 0) Divider(height: 24, color: context.palette.divider),
                 Text(
                   _faqItems[i].question,
                   style: TextStyle(color: context.palette.bodyText, fontSize: 15.5, fontWeight: FontWeight.w700),
@@ -2070,7 +2092,7 @@ Future<void> _showSheet(BuildContext context, Widget child) => showModalBottomSh
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => Padding(padding: const EdgeInsets.all(24), child: child),
     );

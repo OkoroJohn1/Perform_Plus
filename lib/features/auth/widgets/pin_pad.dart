@@ -42,7 +42,21 @@ class PinPad extends StatefulWidget {
   final ValueChanged<String> onComplete;
   final Color? dotColor;
 
-  const PinPad({super.key, required this.controller, required this.onComplete, this.dotColor});
+  /// Key-cap fill and label colour — defaults to the page background /
+  /// body text (the setup sheet's plain white/dark surface). The lock
+  /// screen overrides both to sit correctly on its glass card instead of
+  /// painting a solid light/dark square behind every digit.
+  final Color? keyFillColor;
+  final Color? keyLabelColor;
+
+  const PinPad({
+    super.key,
+    required this.controller,
+    required this.onComplete,
+    this.dotColor,
+    this.keyFillColor,
+    this.keyLabelColor,
+  });
 
   @override
   State<PinPad> createState() => _PinPadState();
@@ -107,20 +121,33 @@ class _PinPadState extends State<PinPad> {
             padding: const EdgeInsets.only(bottom: 14),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [for (final d in row) _PinKey(label: d, onTap: () => _press(d))],
+              children: [
+                for (final d in row)
+                  _PinKey(
+                    label: d,
+                    onTap: () => _press(d),
+                    fillColor: widget.keyFillColor,
+                    labelColor: widget.keyLabelColor,
+                  ),
+              ],
             ),
           ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const SizedBox(width: 64, height: 64),
-            _PinKey(label: '0', onTap: () => _press('0')),
+            _PinKey(
+              label: '0',
+              onTap: () => _press('0'),
+              fillColor: widget.keyFillColor,
+              labelColor: widget.keyLabelColor,
+            ),
             SizedBox(
               width: 64,
               height: 64,
               child: IconButton(
                 icon: const Icon(Icons.backspace_outlined),
-                color: context.palette.secondaryText,
+                color: widget.keyLabelColor ?? context.palette.secondaryText,
                 onPressed: _backspace,
               ),
             ),
@@ -134,15 +161,17 @@ class _PinPadState extends State<PinPad> {
 class _PinKey extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
+  final Color? fillColor;
+  final Color? labelColor;
 
-  const _PinKey({required this.label, required this.onTap});
+  const _PinKey({required this.label, required this.onTap, this.fillColor, this.labelColor});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Material(
-        color: context.palette.background,
+        color: fillColor ?? context.palette.background,
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),
@@ -153,7 +182,7 @@ class _PinKey extends StatelessWidget {
             child: Center(
               child: Text(
                 label,
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: context.palette.bodyText),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: labelColor ?? context.palette.bodyText),
               ),
             ),
           ),

@@ -23,6 +23,7 @@ import '../../../data/repositories/goal_provider.dart';
 import '../../../data/repositories/notification_provider.dart';
 import '../../../domain/engine/projection_solver.dart';
 import '../../../shared/widgets/advisor_mark.dart';
+import '../../../shared/widgets/glass_top_bar.dart';
 import '../../../shared/widgets/app_drawer.dart';
 import '../../auth/providers/profile_provider.dart';
 import '../../home/screens/notifications_panel.dart';
@@ -146,8 +147,7 @@ class _AiAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: DashboardPalette.scaffoldBackground,
+    return TopBarGlassBackground(
       child: SafeArea(
         bottom: false,
         child: Padding(

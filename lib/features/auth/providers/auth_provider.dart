@@ -412,6 +412,30 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     await _client.auth.resetPasswordForEmail(email).timeout(authCallTimeout);
   }
 
+  /// PIN-recovery last resort, reached only once both the PIN pad
+  /// ([pinMaxAttempts] wrong guesses) and security questions have failed
+  /// a student. Sends a 6-digit code to the ALREADY-registered account
+  /// email (`shouldCreateUser: false` -- this must never silently create a
+  /// new account for a typo'd address) rather than a clickable link, so
+  /// the whole recovery stays inside the app instead of handing off to a
+  /// browser/mail client and back.
+  Future<void> sendPinResetCode(String email) async {
+    await _client.auth
+        .signInWithOtp(email: email, shouldCreateUser: false)
+        .timeout(authCallTimeout);
+  }
+
+  /// Verifies the code from [sendPinResetCode]. Success proves the student
+  /// currently controls the registered email, independent of whatever
+  /// local session already existed -- the caller (the PIN-recovery screen)
+  /// treats that as sufficient to clear the local PIN and let a new one be
+  /// set.
+  Future<void> verifyPinResetCode(String email, String code) async {
+    await _client.auth
+        .verifyOTP(email: email, token: code, type: OtpType.email)
+        .timeout(authCallTimeout);
+  }
+
   /// The settings screen's "Change password" row -- needs the network
   /// (Supabase must issue a new session), so a caller should show a clear
   /// offline message rather than let this hang. Not exposed for a

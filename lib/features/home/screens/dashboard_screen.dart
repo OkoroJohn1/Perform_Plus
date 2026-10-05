@@ -30,9 +30,12 @@ import '../../../data/repositories/goal_provider.dart';
 import '../../../data/repositories/notification_provider.dart';
 import '../../../domain/engine/cgpa_engine.dart';
 import '../../../shared/widgets/app_drawer.dart';
+import '../../../shared/widgets/glass_top_bar.dart';
 import '../../auth/providers/pin_provider.dart';
 import '../../auth/providers/profile_provider.dart';
+import '../../auth/providers/security_questions_provider.dart';
 import '../../auth/screens/pin_prompt_dialog.dart';
+import '../../auth/screens/security_questions_prompt_dialog.dart';
 import '../widgets/cgpa_card.dart';
 import '../widgets/credit_load_split_card.dart';
 import '../widgets/next_action_card.dart';
@@ -52,6 +55,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _pinPromptQueued = false;
+  bool _securityQuestionsPromptQueued = false;
 
   void _maybeQueuePinPrompt(PinState pinState) {
     if (_pinPromptQueued || !pinState.loaded || pinState.isSet || pinState.promptDismissed) {
@@ -63,11 +67,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
   }
 
+  /// Only offered once a PIN already exists -- recovery questions for a PIN
+  /// that doesn't exist yet makes no sense, and `showPinPromptDialog` above
+  /// already owns that first step.
+  void _maybeQueueSecurityQuestionsPrompt(PinState pinState, SecurityQuestionsState sqState) {
+    if (_securityQuestionsPromptQueued ||
+        !pinState.loaded ||
+        !pinState.isSet ||
+        !sqState.loaded ||
+        sqState.hasQuestions ||
+        sqState.promptDismissed) {
+      return;
+    }
+    _securityQuestionsPromptQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) showSecurityQuestionsPromptDialog(context, ref);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final standing = ref.watch(standingProvider);
     final profile = ref.watch(studentProfileProvider);
-    _maybeQueuePinPrompt(ref.watch(pinProvider));
+    final pinState = ref.watch(pinProvider);
+    _maybeQueuePinPrompt(pinState);
+    _maybeQueueSecurityQuestionsPrompt(pinState, ref.watch(securityQuestionsProvider));
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
@@ -94,8 +118,7 @@ class _DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: DashboardPalette.scaffoldBackground,
+    return TopBarGlassBackground(
       // `SafeArea` here, not just a fixed `height: 64` -- this is a raw
       // custom `PreferredSizeWidget`, not the real Material `AppBar` (which
       // does this same push-down internally), so without it the top of
@@ -323,7 +346,7 @@ class _GreetingRow extends StatelessWidget {
                     text: '${_greeting()}, ',
                     style: TextStyle(
                       color: context.palette.secondaryText,
-                      fontSize: 22,
+                      fontSize: 17,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -331,9 +354,9 @@ class _GreetingRow extends StatelessWidget {
                     text: _firstName(name),
                     style: TextStyle(
                       color: context.palette.bodyText,
-                      fontSize: 22,
+                      fontSize: 17,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
+                      letterSpacing: -0.2,
                     ),
                   ),
                 ],

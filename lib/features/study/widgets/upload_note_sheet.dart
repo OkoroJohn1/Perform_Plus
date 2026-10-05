@@ -39,7 +39,7 @@ Future<void> showUploadNoteSheet(
 }) {
   return showModalBottomSheet(
     context: context,
-    backgroundColor: Colors.white,
+    backgroundColor: context.palette.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (_) => _UploadNoteSheet(
       category: category,

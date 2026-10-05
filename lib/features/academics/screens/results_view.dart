@@ -302,9 +302,9 @@ class _GlassMiniStatBar extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.80),
+            color: context.palette.surface.withValues(alpha: 0.80),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.65), width: 1.2),
+            border: Border.all(color: context.palette.surface.withValues(alpha: 0.65), width: 1.2),
             boxShadow: [
               BoxShadow(
                 color: context.palette.bodyText.withValues(alpha: 0.10),

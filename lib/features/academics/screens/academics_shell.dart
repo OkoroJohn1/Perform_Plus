@@ -16,10 +16,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_palette.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../data/repositories/academic_record_provider.dart';
 import '../../../data/repositories/notification_provider.dart';
 import '../../../shared/widgets/app_drawer.dart';
+import '../../../shared/widgets/glass_top_bar.dart';
 import '../../home/screens/notifications_panel.dart';
 import 'reports_view.dart';
 import 'results_view.dart';
@@ -92,8 +92,7 @@ class _AcademicsAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: DashboardPalette.scaffoldBackground,
+    return TopBarGlassBackground(
       child: SafeArea(
         bottom: false,
         child: Padding(

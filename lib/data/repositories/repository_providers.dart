@@ -33,6 +33,7 @@ import 'drift_profile_repository.dart';
 import 'note_remote_sync.dart';
 import 'profile_photo_remote_sync.dart';
 import 'profile_remote_sync.dart';
+import 'security_questions_remote_sync.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -106,6 +107,16 @@ final noteRemoteSyncProvider = Provider<NoteRemoteSync?>((ref) {
 final profilePhotoRemoteSyncProvider = Provider<ProfilePhotoRemoteSync?>((ref) {
   try {
     return SupabaseProfilePhotoRemoteSync(Supabase.instance.client);
+  } catch (_) {
+    return null;
+  }
+});
+
+/// Same "`null` when Supabase was never initialized" guard as the two
+/// providers above.
+final securityQuestionsRemoteSyncProvider = Provider<SecurityQuestionsRemoteSync?>((ref) {
+  try {
+    return SupabaseSecurityQuestionsRemoteSync(Supabase.instance.client);
   } catch (_) {
     return null;
   }

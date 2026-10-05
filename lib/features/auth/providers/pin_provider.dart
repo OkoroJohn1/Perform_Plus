@@ -30,11 +30,23 @@ const _biometricEnabledKey = 'pinBiometricEnabled';
 const _autoLockMinutesKey = 'pinAutoLockMinutes';
 const defaultAutoLockMinutes = 1;
 
+/// After this many consecutive wrong PINs, the lock screen stops offering
+/// more PIN attempts and switches to security-question recovery instead —
+/// a deliberate circuit breaker so a lost phone can't be brute-forced
+/// against a 4-digit space indefinitely.
+const pinMaxAttempts = 5;
+
 class PinState {
   final bool isSet;
   final bool unlocked;
   final bool promptDismissed;
   final bool loaded;
+
+  /// Consecutive wrong PIN entries since the last correct one (or since
+  /// launch) — in-memory only, reset on a correct PIN or a fresh app load.
+  /// [PinLockScreen] switches to security-question recovery once this
+  /// reaches [pinMaxAttempts].
+  final int failedAttempts;
 
   /// Whether THIS device can even show a biometric prompt (hardware +
   /// something enrolled) — checked once at load, independent of whether
@@ -59,6 +71,7 @@ class PinState {
     this.biometricAvailable = false,
     this.biometricEnabled = false,
     this.autoLockMinutes = defaultAutoLockMinutes,
+    this.failedAttempts = 0,
   });
 
   /// Whether a lock screen should currently be shown in front of the app.
@@ -66,6 +79,12 @@ class PinState {
 
   /// Whether the lock screen should offer the fingerprint/face shortcut.
   bool get canUseBiometrics => isSet && biometricAvailable && biometricEnabled;
+
+  /// Whether the PIN pad should hand off to security-question recovery
+  /// instead of accepting another guess.
+  bool get pinAttemptsExhausted => failedAttempts >= pinMaxAttempts;
+
+  int get remainingPinAttempts => (pinMaxAttempts - failedAttempts).clamp(0, pinMaxAttempts);
 
   PinState copyWith({
     bool? isSet,
@@ -75,6 +94,7 @@ class PinState {
     bool? biometricAvailable,
     bool? biometricEnabled,
     int? autoLockMinutes,
+    int? failedAttempts,
   }) =>
       PinState(
         isSet: isSet ?? this.isSet,
@@ -84,6 +104,7 @@ class PinState {
         biometricAvailable: biometricAvailable ?? this.biometricAvailable,
         biometricEnabled: biometricEnabled ?? this.biometricEnabled,
         autoLockMinutes: autoLockMinutes ?? this.autoLockMinutes,
+        failedAttempts: failedAttempts ?? this.failedAttempts,
       );
 }
 
@@ -126,7 +147,7 @@ class PinController extends StateNotifier<PinState> {
     final storage = _ref.read(secureStorageProvider);
     await storage.write(key: _pinSaltKey, value: hashed.salt);
     await storage.write(key: _pinHashKey, value: hashed.hash);
-    state = state.copyWith(isSet: true, unlocked: true);
+    state = state.copyWith(isSet: true, unlocked: true, failedAttempts: 0);
   }
 
   Future<bool> verify(String pin) async {
@@ -135,8 +156,19 @@ class PinController extends StateNotifier<PinState> {
     final hash = await storage.read(key: _pinHashKey);
     if (salt == null || hash == null) return false;
     final matches = verifyPin(pin, PinHash(salt: salt, hash: hash));
-    if (matches) state = state.copyWith(unlocked: true);
+    if (matches) {
+      state = state.copyWith(unlocked: true, failedAttempts: 0);
+    } else {
+      state = state.copyWith(failedAttempts: state.failedAttempts + 1);
+    }
     return matches;
+  }
+
+  /// Called once recovery (security questions or email) has independently
+  /// confirmed the student's identity, so the PIN pad can be offered again
+  /// from a clean slate.
+  void resetFailedAttempts() {
+    state = state.copyWith(failedAttempts: 0);
   }
 
   /// Shows the system fingerprint/face prompt and unlocks on success. A
@@ -165,7 +197,7 @@ class PinController extends StateNotifier<PinState> {
     final storage = _ref.read(secureStorageProvider);
     await storage.delete(key: _pinSaltKey);
     await storage.delete(key: _pinHashKey);
-    state = state.copyWith(isSet: false, unlocked: false);
+    state = state.copyWith(isSet: false, unlocked: false, failedAttempts: 0);
     // Biometrics unlock the PIN gate -- once there's no PIN, there's
     // nothing left for them to unlock.
     await setBiometricEnabled(false);

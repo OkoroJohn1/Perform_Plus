@@ -18,9 +18,9 @@ import 'package:intl/intl.dart';
 
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_palette.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../data/repositories/notification_provider.dart';
 import '../../../domain/models/app_notification.dart';
+import '../../../shared/widgets/glass_top_bar.dart';
 import '../../../shared/widgets/quick_settings_sheets.dart';
 import '../services/notification_permission_service.dart';
 import '../widgets/notification_bell_illustration.dart';
@@ -211,8 +211,7 @@ class _NotificationsAppBar extends StatelessWidget implements PreferredSizeWidge
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: DashboardPalette.scaffoldBackground,
+    return TopBarGlassBackground(
       // `SafeArea` here, not just a fixed `height: 64` -- this is a raw
       // custom `PreferredSizeWidget`, not the real Material `AppBar` (which
       // does this same push-down internally), so without it the back arrow

@@ -10,12 +10,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_palette.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../data/repositories/note_provider.dart';
 import '../../../data/repositories/notification_provider.dart';
 import '../../../domain/engine/study_engine.dart';
 import '../../../domain/models/note.dart';
 import '../../../shared/widgets/app_drawer.dart';
+import '../../../shared/widgets/glass_top_bar.dart';
 import '../../home/screens/notifications_panel.dart';
 import '../providers/study_plan_provider.dart';
 import '../widgets/note_illustration.dart';
@@ -122,8 +122,7 @@ class _StudyAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: DashboardPalette.scaffoldBackground,
+    return TopBarGlassBackground(
       child: SafeArea(
         bottom: false,
         child: Padding(
@@ -265,7 +264,7 @@ class _StudyOverview extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
         borderRadius: BorderRadius.circular(18),
       ),
@@ -383,7 +382,7 @@ class _MyNotesSection extends StatelessWidget {
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.palette.surface,
             border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
             borderRadius: BorderRadius.circular(18),
           ),
@@ -667,7 +666,7 @@ class _TodaysPlanSection extends ConsumerWidget {
           margin: const EdgeInsets.symmetric(horizontal: 20),
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.palette.surface,
             border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
             borderRadius: BorderRadius.circular(16),
           ),
@@ -888,7 +887,7 @@ class _StudyToolTile extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.palette.surface,
               border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
               borderRadius: BorderRadius.circular(16),
             ),
