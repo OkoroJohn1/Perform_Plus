@@ -1,9 +1,20 @@
-<!DOCTYPE html>
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+
+// Public, unauthenticated mirror of docs/index.html -- GitHub Pages'
+// *.github.io CDN (Fastly) is unreachable on some Nigerian mobile carriers
+// even though github.com itself works fine, so this serves the same
+// landing/download page from the project's own supabase.co domain as a
+// fallback that isn't on that blocked IP range. The APK download button
+// still points at the GitHub Releases asset (github.com domain), which
+// is unaffected by the same carrier block. Kept as a near-duplicate of
+// docs/index.html rather than templated from it -- update both together
+// if the download page content changes.
+const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<meta name="note" content="Mirror of the Perform+ download page -- served from Supabase because GitHub Pages is unreachable on some Nigerian mobile carriers." />
 <meta name="description" content="Perform+ -- a CGPA tracker built for Nigerian university grading scales. Free Android download." />
-<link rel="icon" type="image/png" href="assets/app-icon.png" />
 <title>Perform+ Download</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -546,7 +557,6 @@
 <nav class="nav">
   <div class="wrap nav-row">
     <a class="brand" href="#top">
-      <img src="assets/logo-mark.png" alt="" />
       Perform+
     </a>
     <div class="nav-links">
@@ -701,7 +711,6 @@
           Download APK
         </a>
         <p class="side-note">Requires Android 7.0 or later.</p>
-        <p class="side-note">Page won't load on your mobile data? Some Nigerian carriers block this address — try <a href="https://ttlesvruldwjnwqtkqvo.supabase.co/functions/v1/website" style="text-decoration:underline">this mirror</a> instead.</p>
 
         <div class="install-steps">
           <div class="ititle">First time sideloading an app?</div>
@@ -717,7 +726,6 @@
 <footer>
   <div class="wrap foot-row">
     <div class="foot-brand">
-      <img src="assets/logo-mark.png" alt="" />
       Perform+
     </div>
     <p>Your results, notes and photo stay on your device. Your name and email leave it only through your account — nothing else is uploaded.</p>
@@ -725,3 +733,13 @@
 </footer>
 </body>
 </html>
+`;
+
+Deno.serve(async (req: Request) => {
+  return new Response(html, {
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "public, max-age=300",
+    },
+  });
+});
