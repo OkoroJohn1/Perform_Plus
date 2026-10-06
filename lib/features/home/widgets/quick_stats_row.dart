@@ -46,9 +46,9 @@ class QuickStatsRow extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 6),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.78),
+            color: context.palette.surface.withValues(alpha: 0.78),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.65), width: 1.3),
+            border: Border.all(color: context.palette.surface.withValues(alpha: 0.65), width: 1.3),
             boxShadow: [
               BoxShadow(
                 color: context.palette.bodyText.withValues(alpha: 0.12),

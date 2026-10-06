@@ -610,7 +610,7 @@ class _GradeTable extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: DashboardPalette.scaffoldBackground,
+        color: context.palette.background,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -1112,7 +1112,7 @@ class _SummaryTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: DashboardPalette.scaffoldBackground,
+        color: context.palette.background,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(

@@ -119,13 +119,13 @@ class _UploadNoteSheetState extends ConsumerState<_UploadNoteSheet> {
             label: 'Choose a PDF',
             onTap: () => _handle(widget.pickPdf),
           ),
-          const Divider(height: 1, color: Color(0xFFECECF1)),
+          Divider(height: 1, color: context.palette.divider),
           _UploadOption(
             icon: Icons.image_outlined,
             label: 'Choose images',
             onTap: () => _handle(() => widget.pickImage(ImageSource.gallery)),
           ),
-          const Divider(height: 1, color: Color(0xFFECECF1)),
+          Divider(height: 1, color: context.palette.divider),
           _UploadOption(
             icon: Icons.photo_camera_outlined,
             label: 'Photograph pages',

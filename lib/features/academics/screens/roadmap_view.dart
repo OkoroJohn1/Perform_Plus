@@ -241,7 +241,7 @@ class _ProjectionResultCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: DashboardPalette.scaffoldBackground,
+        color: context.palette.background,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(

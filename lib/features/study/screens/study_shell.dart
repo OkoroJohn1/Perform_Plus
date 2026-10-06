@@ -207,7 +207,11 @@ class _HeroBanner extends StatelessWidget {
       padding: const EdgeInsets.all(22),
       constraints: const BoxConstraints(minHeight: 150),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Color(0xFFF1EFFE), Color(0xFFFAF9FF)]),
+        gradient: LinearGradient(
+          colors: Theme.of(context).brightness == Brightness.dark
+              ? [context.palette.primary.withValues(alpha: 0.22), context.palette.surface]
+              : const [Color(0xFFF1EFFE), Color(0xFFFAF9FF)],
+        ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: context.palette.surfaceBorder, width: 1.2),
       ),

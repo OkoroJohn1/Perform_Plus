@@ -81,8 +81,16 @@ class AppPalette extends ThemeExtension<AppPalette> {
     final isDark = brightness == Brightness.dark;
     return AppPalette(
       background: isDark ? const Color(0xFF0B0A18) : const Color(0xFFF7F7FB),
-      surface: isDark ? const Color(0xFF18162C) : Colors.white,
-      surfaceBorder: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE5E5EC),
+      // A touch richer/lighter than the old 0xFF18162C -- reads as a
+      // genuinely "elevated" card against the background instead of a
+      // nearly-identical dark-on-dark smudge, the flat-and-dated look dark
+      // mode had before.
+      surface: isDark ? const Color(0xFF201D3C) : Colors.white,
+      // Tinted with the chosen accent instead of plain white -- a subtle
+      // colour-matched edge glow (premium-glass look, same language as the
+      // PIN lock screen / top bars) rather than a generic grey outline,
+      // and personalises to whichever of the four accents is picked.
+      surfaceBorder: isDark ? accentPrimary.withValues(alpha: 0.22) : const Color(0xFFE5E5EC),
       bodyText: isDark ? Colors.white : const Color(0xFF0F0F14),
       secondaryText: isDark ? Colors.white.withValues(alpha: 0.70) : const Color(0xFF6B7280),
       hintText: isDark ? Colors.white.withValues(alpha: 0.54) : const Color(0xFF9CA3AF),

@@ -198,7 +198,7 @@ class _TrendChartBodyState extends State<_TrendChartBody> with TickerProviderSta
     const gridData = FlGridData(show: false);
     final borderData = FlBorderData(
       show: true,
-      border: const Border(bottom: BorderSide(color: Color(0xFFECECF1), width: 1)),
+      border: Border(bottom: BorderSide(color: context.palette.divider, width: 1)),
     );
     final rangeAnnotations = RangeAnnotations(
       horizontalRangeAnnotations: [
@@ -224,7 +224,7 @@ class _TrendChartBodyState extends State<_TrendChartBody> with TickerProviderSta
                 show: true,
                 alignment: Alignment.topRight,
                 labelResolver: (_) => band.shortLabel,
-                style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+                style: TextStyle(fontSize: 11, color: context.palette.hintText),
               ),
             ),
         if (widget.goal != null)
