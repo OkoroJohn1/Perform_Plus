@@ -1,7 +1,7 @@
 name: perform_plus
 description: Academic performance tracking and AI advisory for Nigerian students.
 publish_to: none
-version: 0.2.2+5
+version: 0.2.3+6
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
