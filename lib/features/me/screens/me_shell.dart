@@ -1486,7 +1486,17 @@ void _showAppLockSheet(BuildContext context, WidgetRef ref, bool isSet) {
           ),
           Divider(height: 1, color: context.palette.divider),
           Consumer(
-            builder: (context, ref, _) {
+            // Named `_` deliberately, NOT `context` -- shadowing the outer
+            // `_showAppLockSheet(BuildContext context, ...)` parameter with
+            // this Consumer's own context was the bug: that inner context
+            // belongs to this bottom sheet, which `Navigator.of(sheetContext)
+            // .pop()` below closes immediately on tap. By the time the PIN
+            // pad's `onVerified` callback fires (seconds later, after the
+            // student finishes entering their PIN), that context was long
+            // unmounted, so `showSecurityQuestionsSetupSheet` silently
+            // failed and the student saw nothing happen. The outer `context`
+            // belongs to the Me tab screen itself, which stays mounted.
+            builder: (_, ref, __) {
               final hasQuestions = ref.watch(securityQuestionsProvider.select((s) => s.hasQuestions));
               return ListTile(
                 key: const ValueKey('securityQuestionsTap'),

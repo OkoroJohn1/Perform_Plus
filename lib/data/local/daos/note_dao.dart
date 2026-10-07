@@ -67,6 +67,19 @@ class NoteDao extends DatabaseAccessor<AppDatabase> with _$NoteDaoMixin {
     return row?.read(sumExpr) ?? 0;
   }
 
+  /// Active reading seconds per note, in one query — the per-document half
+  /// of "Study hours", shown on each note's own card.
+  Future<Map<String, int>> activeSecondsByNote() async {
+    final sumExpr = readingSessions.activeSeconds.sum();
+    final query = selectOnly(readingSessions)
+      ..addColumns([readingSessions.noteId, sumExpr])
+      ..groupBy([readingSessions.noteId]);
+    final rows = await query.get();
+    return {
+      for (final row in rows) row.read(readingSessions.noteId)!: row.read(sumExpr) ?? 0,
+    };
+  }
+
   Future<StudyStreakRow?> getStreak(String profileId) =>
       (select(studyStreaks)..where((s) => s.profileId.equals(profileId))).getSingleOrNull();
 

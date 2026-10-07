@@ -114,6 +114,9 @@ class DriftNoteRepository implements NoteRepository {
   Future<int> totalActiveSeconds() => _dao.totalActiveSeconds();
 
   @override
+  Future<Map<String, int>> activeSecondsByNote() => _dao.activeSecondsByNote();
+
+  @override
   Future<({int streak, DateTime? lastReadDate})> loadStreak() async {
     final row = await _dao.getStreak(AppConstants.localProfileId);
     return (streak: row?.currentStreak ?? 0, lastReadDate: row?.lastReadDate);

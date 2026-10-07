@@ -4,6 +4,34 @@
 /// inline in a widget.
 library;
 
+import 'dart:math';
+
+/// Shown for 6 seconds every time a document is opened (see
+/// `study_advice_reveal_screen.dart`) — a deliberate pause before reading
+/// starts, not a one-time tip. A fixed list rather than anything generated:
+/// these are honest, specific, and never invented per-session.
+const studyAdviceMessages = [
+  'Reading a page and remembering it are two different things. Pause and ask yourself what you just read.',
+  "The timer only knows the app is open. Whether you're actually studying is still entirely up to you.",
+  'Put your phone where you can’t reach it for the next few minutes. Notifications are the easiest way to lose focus.',
+  'Try explaining this page out loud, like you’re teaching it to someone else. If you can’t, read it again.',
+  'A tired brain doesn’t absorb much. If you’re exhausted, a short break now beats an hour of staring blankly.',
+  "Skimming feels like progress. It usually isn't. Slow down on the parts that don't make sense yet.",
+  'Write down one question this page raises for you. Looking for the answer is how it actually sticks.',
+  'Your future self is the one who inherits whatever you do with this time right now.',
+  'Studying tired, distracted, or half-present only gives you the feeling of having studied.',
+  "No one is grading how long this document stayed open — only what you actually take from it.",
+];
+
+String randomStudyAdvice([Random? random]) {
+  final rng = random ?? Random();
+  return studyAdviceMessages[rng.nextInt(studyAdviceMessages.length)];
+}
+
+/// How long the pre-reading advice screen stays up before auto-advancing
+/// into the document.
+const studyAdviceRevealSeconds = 6;
+
 /// Minimum time a page must stay open before it counts as read. 200 words
 /// per minute is a conservative reading speed; the 90s cap stops a dense
 /// page from becoming a punishment, and the 8s floor stops a near-empty
@@ -78,8 +106,12 @@ int effectiveStreak({
   return (streak: 1, lastReadDate: now);
 }
 
-/// A day counts toward the streak once this much reading is logged on it.
-const minutesRequiredForStreakDay = 10;
+/// A day counts toward the streak once a SINGLE document session (open to
+/// exit, active time only — see `ReadingSessionRow.activeSeconds`) reaches
+/// this many minutes. Deliberately not an aggregate across several short
+/// sessions: opening three different notes for ten minutes each proves far
+/// less sustained focus than thirty continuous minutes on one.
+const minutesRequiredForStreakDay = 30;
 
 /// One page's dwell-timer state — see [tickDwell]/[pauseDwell]/[resumeDwell].
 /// Deliberately separate from any widget/Timer: the reader screen drives

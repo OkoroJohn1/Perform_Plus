@@ -134,7 +134,7 @@ class _EmptyResults extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.school_outlined, size: 48, color: Color(0xFFD1D5DB)),
+            Icon(Icons.school_outlined, size: 48, color: context.palette.emptyIcon),
             const SizedBox(height: 16),
             Text(
               'No results yet',
@@ -265,7 +265,7 @@ class _StandingCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Divider(height: 1, color: Color(0xFFECECF1)),
+                Divider(height: 1, color: context.palette.divider),
                 const SizedBox(height: 16),
                 _CreditSplitBar(rawSemesters: rawSemesters, standing: standing),
               ],
@@ -580,7 +580,7 @@ class _SemesterAccordionState extends State<_SemesterAccordion> {
                 AnimatedRotation(
                   duration: const Duration(milliseconds: 220),
                   turns: _expanded ? 0.5 : 0,
-                  child: const Icon(Icons.keyboard_arrow_down, size: 22, color: Color(0xFF9CA3AF)),
+                  child: Icon(Icons.keyboard_arrow_down, size: 22, color: context.palette.hintText),
                 ),
               ],
             ),
@@ -592,7 +592,7 @@ class _SemesterAccordionState extends State<_SemesterAccordion> {
           alignment: Alignment.topCenter,
           child: _expanded ? _GradeTable(rows: rows) : const SizedBox(width: double.infinity),
         ),
-        const Divider(height: 1, color: Color(0xFFECECF1)),
+        Divider(height: 1, color: context.palette.divider),
       ],
     );
   }
@@ -761,7 +761,7 @@ class _SemesterList extends StatelessWidget {
           return Column(
             children: [
               for (var i = 0; i < ordered.length; i++) ...[
-                if (i > 0) const Divider(height: 1, indent: 72, color: Color(0xFFECECF1)),
+                if (i > 0) Divider(height: 1, indent: 72, color: context.palette.divider),
                 _SemesterRow(
                   entry: ordered[i],
                   scheme: scheme,
@@ -851,7 +851,7 @@ class _SemesterRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              const VerticalDivider(width: 1, color: Color(0xFFECECF1)),
+              VerticalDivider(width: 1, color: context.palette.divider),
               const SizedBox(width: 16),
               Expanded(
                 child: Row(
@@ -867,7 +867,7 @@ class _SemesterRow extends StatelessWidget {
                               Text(
                                 _fmt(comp.gpa),
                                 style: TextStyle(
-                                  color: performanceColor(comp.gpa),
+                                  color: performanceColor(comp.gpa, normal: context.palette.bodyText),
                                   fontSize: 20,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -891,7 +891,7 @@ class _SemesterRow extends StatelessWidget {
                             Text(
                               _fmt(entry.cgpaThen),
                               style: TextStyle(
-                                color: performanceColor(entry.cgpaThen),
+                                color: performanceColor(entry.cgpaThen, normal: context.palette.bodyText),
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -905,7 +905,7 @@ class _SemesterRow extends StatelessWidget {
               const SizedBox(width: 8),
               Container(width: 6, height: 44, decoration: BoxDecoration(color: barColor, borderRadius: BorderRadius.circular(3))),
               const SizedBox(width: 4),
-              const Icon(Icons.chevron_right, size: 22, color: Color(0xFF9CA3AF)),
+              Icon(Icons.chevron_right, size: 22, color: context.palette.hintText),
             ],
           ),
         ),
@@ -1048,7 +1048,7 @@ class _PerformanceSummaryCard extends StatelessWidget {
                     icon: Icons.trending_up,
                     value: best == null ? '—' : _fmt(best),
                     label: 'Best semester',
-                    valueColor: best == null ? null : performanceColor(best),
+                    valueColor: best == null ? null : performanceColor(best, normal: context.palette.bodyText),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1057,7 +1057,7 @@ class _PerformanceSummaryCard extends StatelessWidget {
                     icon: Icons.trending_down,
                     value: worst == null ? '—' : _fmt(worst),
                     label: 'Lowest semester',
-                    valueColor: worst == null ? null : performanceColor(worst),
+                    valueColor: worst == null ? null : performanceColor(worst, normal: context.palette.bodyText),
                   ),
                 ),
               ],
@@ -1474,7 +1474,7 @@ class _SemesterDetailSheet extends ConsumerWidget {
                 ),
               ),
             ),
-            const Divider(height: 24, color: Color(0xFFECECF1)),
+            Divider(height: 24, color: context.palette.divider),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

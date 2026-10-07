@@ -1198,44 +1198,59 @@ class _CourseCodeRow extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            flex: 3,
-            child: TextFormField(
-              initialValue: row.courseCode,
-              textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(
-                labelText: 'Course',
-                isDense: true,
-                border: OutlineInputBorder(),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: TextFormField(
+                  initialValue: row.courseCode,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: const InputDecoration(
+                    labelText: 'Course',
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (v) => onChanged(row.copyWith(courseCode: v)),
+                ),
               ),
-              onChanged: (v) => onChanged(row.copyWith(courseCode: v)),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: DropdownButtonFormField<int>(
+                  initialValue: row.creditUnit,
+                  decoration: const InputDecoration(
+                    labelText: 'Units',
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                  ),
+                  items: List.generate(
+                    AppConstants.maxCreditUnit,
+                    (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}')),
+                  ),
+                  onChanged: (v) => onChanged(row.copyWith(creditUnit: v)),
+                ),
+              ),
+              if (onRemove != null)
+                IconButton(
+                  icon: const Icon(Icons.close_outlined, size: 18),
+                  onPressed: onRemove,
+                  tooltip: 'Remove',
+                ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 2,
-            child: DropdownButtonFormField<int>(
-              initialValue: row.creditUnit,
-              decoration: const InputDecoration(
-                labelText: 'Units',
-                isDense: true,
-                border: OutlineInputBorder(),
-              ),
-              items: List.generate(
-                AppConstants.maxCreditUnit,
-                (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}')),
-              ),
-              onChanged: (v) => onChanged(row.copyWith(creditUnit: v)),
+          const SizedBox(height: 8),
+          TextFormField(
+            initialValue: row.courseTitle,
+            decoration: const InputDecoration(
+              labelText: 'Course title (optional)',
+              isDense: true,
+              border: OutlineInputBorder(),
             ),
+            onChanged: (v) => onChanged(row.copyWith(courseTitle: v)),
           ),
-          if (onRemove != null)
-            IconButton(
-              icon: const Icon(Icons.close_outlined, size: 18),
-              onPressed: onRemove,
-              tooltip: 'Remove',
-            ),
         ],
       ),
     );
@@ -1485,6 +1500,16 @@ class _CombinedCourseRow extends StatelessWidget {
                 )
                 .toList(),
             onChanged: (v) => onChanged(row.copyWith(grade: v)),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            initialValue: row.courseTitle,
+            decoration: const InputDecoration(
+              labelText: 'Course title (optional)',
+              isDense: true,
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (v) => onChanged(row.copyWith(courseTitle: v)),
           ),
         ],
       ),

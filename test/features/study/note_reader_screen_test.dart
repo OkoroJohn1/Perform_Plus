@@ -52,6 +52,9 @@ class _FakeNoteRepository implements NoteRepository {
 
   @override
   Future<int> totalActiveSeconds() async => 0;
+
+  @override
+  Future<Map<String, int>> activeSecondsByNote() async => {};
 }
 
 class _FakeRenderer implements PageRenderer {

@@ -28,7 +28,7 @@ import '../../../shared/widgets/app_drawer.dart';
 import '../../auth/providers/profile_provider.dart';
 import '../../home/screens/notifications_panel.dart';
 import '../services/advisor_insights.dart';
-import 'advisor_chat_sheet.dart';
+import 'advisor_chat_screen.dart';
 
 String _fmt(double v) => v.toStringAsFixed(2);
 
@@ -124,7 +124,7 @@ class AiShell extends ConsumerWidget {
                       _InsightsContainer(insights: state.insights),
                     ],
                     const SizedBox(height: 24),
-                    _AskButton(onPressed: () => showAdvisorChatSheet(context)),
+                    _AskButton(onPressed: () => openAdvisorChat(context)),
                   ],
                 ),
         ),

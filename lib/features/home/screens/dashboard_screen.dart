@@ -38,6 +38,7 @@ import '../../auth/screens/pin_prompt_dialog.dart';
 import '../../auth/screens/security_questions_prompt_dialog.dart';
 import '../../academics/widgets/add_semester_sheet.dart';
 import '../widgets/cgpa_card.dart';
+import '../widgets/course_strength_card.dart';
 import '../widgets/credit_load_split_card.dart';
 import '../widgets/next_action_card.dart';
 import '../widgets/quick_stats_row.dart';
@@ -319,6 +320,8 @@ class _PopulatedDashboard extends ConsumerWidget {
           SemesterComparisonCard(standing: standing, scheme: scheme),
           const SizedBox(height: 20),
           CreditLoadSplitCard(standing: standing, rawSemesters: rawSemesters),
+          const SizedBox(height: 20),
+          CourseStrengthCard(standing: standing, scheme: scheme, rawSemesters: rawSemesters),
           const SizedBox(height: 20),
           NextActionCard(
             standing: standing,

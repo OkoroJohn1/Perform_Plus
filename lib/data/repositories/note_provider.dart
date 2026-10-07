@@ -25,6 +25,7 @@ const _uuid = Uuid();
 class NotesState {
   final List<Note> notes;
   final Map<String, int> pagesReadByNote;
+  final Map<String, int> activeSecondsByNote;
   final int totalActiveSeconds;
   final int storedStreak;
   final DateTime? lastReadDate;
@@ -32,6 +33,7 @@ class NotesState {
   const NotesState({
     this.notes = const [],
     this.pagesReadByNote = const {},
+    this.activeSecondsByNote = const {},
     this.totalActiveSeconds = 0,
     this.storedStreak = 0,
     this.lastReadDate,
@@ -45,9 +47,15 @@ class NotesState {
 
   int pagesReadFor(String noteId) => pagesReadByNote[noteId] ?? 0;
 
+  /// Cumulative active reading time for one document -- the per-document
+  /// half of "Study hours" (see `_StudyOverview`'s aggregate tile for the
+  /// "for all in general" half).
+  int activeSecondsFor(String noteId) => activeSecondsByNote[noteId] ?? 0;
+
   NotesState copyWith({
     List<Note>? notes,
     Map<String, int>? pagesReadByNote,
+    Map<String, int>? activeSecondsByNote,
     int? totalActiveSeconds,
     int? storedStreak,
     DateTime? lastReadDate,
@@ -55,6 +63,7 @@ class NotesState {
       NotesState(
         notes: notes ?? this.notes,
         pagesReadByNote: pagesReadByNote ?? this.pagesReadByNote,
+        activeSecondsByNote: activeSecondsByNote ?? this.activeSecondsByNote,
         totalActiveSeconds: totalActiveSeconds ?? this.totalActiveSeconds,
         storedStreak: storedStreak ?? this.storedStreak,
         lastReadDate: lastReadDate ?? this.lastReadDate,
@@ -89,12 +98,14 @@ class NotesController extends StateNotifier<NotesState> {
     if (repo == null) return;
     final notes = await repo.loadNotes();
     final counts = await repo.pagesReadCountByNote();
+    final activeSeconds = await repo.activeSecondsByNote();
     final totalSeconds = await repo.totalActiveSeconds();
     final streak = await repo.loadStreak();
     if (!mounted) return;
     state = NotesState(
       notes: notes,
       pagesReadByNote: counts,
+      activeSecondsByNote: activeSeconds,
       totalActiveSeconds: totalSeconds,
       storedStreak: streak.streak,
       lastReadDate: streak.lastReadDate,
@@ -278,7 +289,13 @@ class NotesController extends StateNotifier<NotesState> {
     // (e.g. the app itself is closing), there's no state left to update.
     if (!mounted) return;
 
-    var next = state.copyWith(totalActiveSeconds: state.totalActiveSeconds + activeSeconds);
+    final perNote = {...state.activeSecondsByNote};
+    perNote[noteId] = (perNote[noteId] ?? 0) + activeSeconds;
+
+    var next = state.copyWith(
+      activeSecondsByNote: perNote,
+      totalActiveSeconds: state.totalActiveSeconds + activeSeconds,
+    );
     if (activeSeconds ~/ 60 >= minutesRequiredForStreakDay) {
       final result = recordQualifyingRead(
         storedStreak: state.storedStreak,

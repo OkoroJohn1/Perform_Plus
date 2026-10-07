@@ -33,6 +33,11 @@ class Routes {
   /// the bottom nav stays visible; see `AppScaffold`.
   static const notifications = '/notifications';
 
+  /// Pushed from the AI tab's "Ask about your results" button and
+  /// `AdvisorFab` on Home/Academics/Study — a real screen with its own back
+  /// arrow/gesture, not a dismissible sheet (see `advisor_chat_screen.dart`).
+  static const advisorChat = '/ai/chat';
+
   static const _preAuth = <String>{splash, signIn};
 
   /// Whether a location is reachable without a session — every `/onboarding/`

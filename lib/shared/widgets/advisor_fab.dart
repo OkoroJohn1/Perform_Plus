@@ -19,7 +19,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_palette.dart';
-import '../../features/ai/screens/advisor_chat_sheet.dart';
+import '../../features/ai/screens/advisor_chat_screen.dart';
 import 'advisor_mark.dart';
 
 class AdvisorFab extends StatefulWidget {
@@ -49,7 +49,7 @@ class _AdvisorFabState extends State<AdvisorFab> {
 
     return GestureDetector(
       key: const ValueKey('advisorFabTap'),
-      onTap: () => showAdvisorChatSheet(context),
+      onTap: () => openAdvisorChat(context),
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),

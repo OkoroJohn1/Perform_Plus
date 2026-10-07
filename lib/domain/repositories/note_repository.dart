@@ -22,6 +22,9 @@ abstract class NoteRepository {
   Future<void> logSession(ReadingSession session);
   Future<int> totalActiveSeconds();
 
+  /// Active reading seconds per note id, in one round trip.
+  Future<Map<String, int>> activeSecondsByNote();
+
   Future<({int streak, DateTime? lastReadDate})> loadStreak();
   Future<void> saveStreak({required int streak, required DateTime lastReadDate});
 }

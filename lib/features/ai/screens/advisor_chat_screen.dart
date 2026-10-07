@@ -1,37 +1,34 @@
-/// The global chat entry point's sheet — opened by the AI tab's button and
-/// by [AdvisorFab] on Home/Academics/Study.
+/// The global chat entry point — opened by the AI tab's button and by
+/// [AdvisorFab] on Home/Academics/Study. A real pushed screen with its own
+/// back arrow/gesture, not a dismissible slide-up sheet -- a chat is
+/// somewhere a student goes to and returns from, not a transient overlay.
 ///
-/// Gated on [AppConstants.enableAdvisorChat] (now true): wired to the
-/// `ai-advisor` Supabase Edge Function via `advisor_chat_service.dart`. The
-/// model only ever receives [buildAdvisorChatContext]'s already-computed
-/// payload plus the conversation text — never raw grades — per AGENTS.md's
-/// "THE RULE THAT MATTERS MOST".
+/// Wired to the `ai-advisor` Supabase Edge Function via
+/// `advisor_chat_service.dart`. The model only ever receives
+/// [buildAdvisorChatContext]'s already-computed payload plus the
+/// conversation text — never raw grades — per AGENTS.md's "THE RULE THAT
+/// MATTERS MOST".
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/router/routes.dart';
 import '../../../core/theme/app_palette.dart';
 import '../../../data/repositories/academic_record_provider.dart';
 import '../../../data/repositories/goal_provider.dart';
 import '../../../shared/widgets/advisor_mark.dart';
+import '../../../shared/widgets/glass_top_bar.dart';
 import '../../auth/providers/profile_provider.dart';
 import '../services/advisor_chat_service.dart';
 import '../services/advisor_insights.dart';
 
-Future<void> showAdvisorChatSheet(BuildContext context) {
-  return showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => const _AdvisorChatSheet(),
-  );
-}
+void openAdvisorChat(BuildContext context) => context.push(Routes.advisorChat);
 
-class _AdvisorChatSheet extends ConsumerWidget {
-  const _AdvisorChatSheet();
+class AdvisorChatScreen extends ConsumerWidget {
+  const AdvisorChatScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -63,52 +60,61 @@ class _AdvisorChatSheet extends ConsumerWidget {
       goalProjection: goalProjection,
     );
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.85,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) => Container(
-        decoration: BoxDecoration(
-          color: context.palette.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
-              child: Row(
-                children: [
-                  const AdvisorMark(size: 32, simplified: true),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Performia',
-                      style: TextStyle(
-                        color: context.palette.bodyText,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
+    return Scaffold(
+      backgroundColor: context.palette.background,
+      appBar: const _AdvisorChatAppBar(),
+      body: SafeArea(
+        top: false,
+        child: AppConstants.enableAdvisorChat
+            ? _RealChat(context: chatContext, activeTitles: activeTitles)
+            : _ChatStub(activeTitles: activeTitles),
+      ),
+    );
+  }
+}
+
+class _AdvisorChatAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const _AdvisorChatAppBar();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(64);
+
+  @override
+  Widget build(BuildContext context) {
+    return TopBarGlassBackground(
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: SizedBox(
+            height: 64,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: IconButton(
+                    key: const ValueKey('advisorChatBackTap'),
+                    icon: Icon(Icons.arrow_back, size: 24, color: context.palette.primary),
+                    onPressed: () => Navigator.of(context).maybePop(),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const AdvisorMark(size: 28, simplified: true),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Performia',
+                    style: TextStyle(
+                      color: context.palette.bodyText,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: IconButton(
-                      icon: Icon(Icons.close, size: 24, color: context.palette.secondaryText),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const Divider(height: 1, color: Color(0xFFECECF1)),
-            Expanded(
-              child: AppConstants.enableAdvisorChat
-                  ? _RealChat(context: chatContext, activeTitles: activeTitles)
-                  : _ChatStub(scrollController: scrollController, activeTitles: activeTitles),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -245,7 +251,7 @@ class _ChatBubble extends StatelessWidget {
         ? palette.primary
         : message.isError
             ? palette.errorBackground
-            : palette.background;
+            : palette.surface;
     final textColor = isUser ? palette.onPrimary : (message.isError ? palette.error : palette.bodyText);
 
     return Padding(
@@ -285,7 +291,7 @@ class _TypingBubble extends StatelessWidget {
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(color: palette.background, borderRadius: BorderRadius.circular(16)),
+            decoration: BoxDecoration(color: palette.surface, borderRadius: BorderRadius.circular(16)),
             child: SizedBox(
               width: 16,
               height: 16,
@@ -389,11 +395,19 @@ class _ChatInputBar extends StatelessWidget {
                   hintText: 'Ask about your results…',
                   hintStyle: TextStyle(color: palette.hintText),
                   filled: true,
-                  fillColor: palette.background,
+                  fillColor: palette.surface,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
+                    borderSide: BorderSide(color: palette.surfaceBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: palette.surfaceBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: palette.primary, width: 1.4),
                   ),
                 ),
               ),
@@ -421,15 +435,13 @@ class _ChatInputBar extends StatelessWidget {
 }
 
 class _ChatStub extends StatelessWidget {
-  final ScrollController scrollController;
   final List<String> activeTitles;
 
-  const _ChatStub({required this.scrollController, required this.activeTitles});
+  const _ChatStub({required this.activeTitles});
 
   @override
   Widget build(BuildContext context) {
     return ListView(
-      controller: scrollController,
       padding: const EdgeInsets.fromLTRB(20, 32, 20, 32),
       children: [
         const Center(
@@ -466,9 +478,7 @@ class _ChatStub extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(999),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                    },
+                    onTap: () => Navigator.of(context).maybePop(),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       child: Text(

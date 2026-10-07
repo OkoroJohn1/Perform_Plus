@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/academics/screens/academics_shell.dart';
+import '../../features/ai/screens/advisor_chat_screen.dart';
 import '../../features/ai/screens/ai_shell.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/sign_in_screen.dart';
@@ -183,6 +184,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const NotificationsPanel(),
           ),
         ],
+      ),
+
+      // Top-level, not nested under the tab ShellRoute -- a full-screen
+      // takeover with its own back arrow/gesture, not a sheet over the tab
+      // bar. See Routes.advisorChat's doc comment.
+      GoRoute(
+        path: Routes.advisorChat,
+        builder: (_, __) => const AdvisorChatScreen(),
       ),
     ],
 

@@ -34,14 +34,19 @@ function json(body: unknown, status: number): Response {
   });
 }
 
-const EXTRACTION_PROMPT = `You are reading a photo of a Nigerian university COURSE REGISTRATION slip (it lists courses a student registered for -- it is NOT a result slip and does not carry grades). Extract every course row you can clearly read into a JSON array. For each course return an object with exactly these fields:
-- "courseCode": the course code exactly as printed (e.g. "CSC201"), uppercase, no spaces
-- "courseTitle": the course title exactly as printed, or null if not legible/present
-- "creditUnit": the credit unit as a whole number, or null if not legible/present
+const EXTRACTION_PROMPT = `You are reading a photo or screenshot of a Nigerian university COURSE REGISTRATION slip/printout (it lists courses a student registered for -- it is NOT a result slip and does not carry grades). Many of these come from a university "Student Self Care Portal" as a table titled something like "REGISTERED COURSES" with columns similar to: Course Code, Course Title, Course Unit, Course Type, Approved -- but the layout varies by institution, so read whatever table is actually present.
+
+Extract every course row from that table into a JSON array. For each course return an object with exactly these fields:
+- "courseCode": the course code exactly as printed, uppercase, with internal spaces removed (e.g. "MTH 101" -> "MTH101")
+- "courseTitle": the course title exactly as printed (e.g. "ELEMENTARY MATHEMATICS I"), or null if not legible/present
+- "creditUnit": the course/credit unit as a whole number, or null if not legible/present
 - "confidence": your own confidence in this row's accuracy, a number from 0 to 1
 
 Rules:
 - Never invent a course that is not visibly printed on the slip.
+- Skip a "TOTAL" row or any other summary/footer row at the bottom of the table -- it is not a course.
+- Ignore columns like "Course Type" (Compulsory/Elective) and "Approved" entirely -- they are not needed and must not appear in your output.
+- Do not confuse the student's personal details above the table (full name, matric number, school/department, level, session, semester) for course data.
 - Never output a grade, class of degree, or any computed/derived number -- only transcribe what is printed for the three fields above.
 - If the image is not a course registration/result slip at all, or nothing on it is legible, return an empty array.
 - Return ONLY the JSON array. No markdown fences, no other text.`;

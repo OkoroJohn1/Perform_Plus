@@ -21,7 +21,7 @@ import '../providers/study_plan_provider.dart';
 import '../widgets/note_illustration.dart';
 import '../widgets/study_calendar_card.dart';
 import '../widgets/upload_note_sheet.dart';
-import 'note_reader_screen.dart';
+import 'study_advice_reveal_screen.dart';
 
 IconData _fileGlyph(NoteFileType type) =>
     type == NoteFileType.pdf ? Icons.picture_as_pdf : Icons.image_outlined;
@@ -31,9 +31,19 @@ int _pagesRead(NotesState state, Note note) => state.pagesReadFor(note.id);
 bool _isCompleted(NotesState state, Note note) =>
     note.totalPages > 0 && _pagesRead(state, note) >= note.totalPages;
 
+/// "42m" under an hour, "1h 05m" at or beyond -- matches the aggregate
+/// "Study hours" tile's precision at a glance without needing a decimal.
+String _formatStudyTime(int seconds) {
+  final totalMinutes = seconds ~/ 60;
+  if (totalMinutes < 60) return '${totalMinutes}m';
+  final hours = totalMinutes ~/ 60;
+  final minutes = totalMinutes % 60;
+  return '${hours}h ${minutes.toString().padLeft(2, '0')}m';
+}
+
 void _openReader(BuildContext context, String noteId) {
   Navigator.of(context).push(
-    MaterialPageRoute(builder: (_) => NoteReaderScreen(noteId: noteId)),
+    MaterialPageRoute(builder: (_) => StudyAdviceRevealScreen(noteId: noteId)),
   );
 }
 
@@ -57,6 +67,8 @@ class StudyShell extends ConsumerWidget {
             padding: const EdgeInsets.only(top: 16, bottom: 24),
             children: [
               const _HeroBanner(),
+              const SizedBox(height: 16),
+              const _HonestyNotice(),
               const SizedBox(height: 24),
               const StudyCalendarCard(),
               const SizedBox(height: 26),
@@ -254,6 +266,44 @@ class _HeroBanner extends StatelessWidget {
   }
 }
 
+/// A friendly, non-judgemental honesty check -- the reading timer only
+/// knows the app was open and active, never whether the student actually
+/// absorbed anything (see `note_reader_screen.dart`'s own doc comment on
+/// this same limit). Leaving a document open without reading it produces a
+/// real-looking "study hours" number that means nothing; this says so
+/// plainly rather than letting that number quietly mislead the student
+/// about their own progress.
+class _HonestyNotice extends StatelessWidget {
+  const _HonestyNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: palette.amberBackground,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.visibility_outlined, size: 18, color: palette.amber),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "You can leave a document open without really studying -- the timer "
+              "can't tell. That choice is yours, but it's only ever yourself you'd be fooling.",
+              style: TextStyle(color: palette.amber, fontSize: 13, height: 1.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _StudyOverview extends StatelessWidget {
   final NotesState state;
 
@@ -394,7 +444,11 @@ class _MyNotesSection extends StatelessWidget {
             children: [
               for (var i = 0; i < shown.length; i++) ...[
                 if (i > 0) const Divider(height: 1, indent: 76, color: Color(0xFFECECF1)),
-                _NoteRow(note: shown[i], pagesRead: _pagesRead(state, shown[i])),
+                _NoteRow(
+                  note: shown[i],
+                  pagesRead: _pagesRead(state, shown[i]),
+                  activeSeconds: state.activeSecondsFor(shown[i].id),
+                ),
               ],
             ],
           ),
@@ -446,7 +500,11 @@ class _AllNotesSheet extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: notes.length,
               separatorBuilder: (_, __) => const Divider(height: 1, indent: 76, color: Color(0xFFECECF1)),
-              itemBuilder: (context, i) => _NoteRow(note: notes[i], pagesRead: _pagesRead(state, notes[i])),
+              itemBuilder: (context, i) => _NoteRow(
+                note: notes[i],
+                pagesRead: _pagesRead(state, notes[i]),
+                activeSeconds: state.activeSecondsFor(notes[i].id),
+              ),
             ),
           ),
         ],
@@ -458,8 +516,9 @@ class _AllNotesSheet extends ConsumerWidget {
 class _NoteRow extends ConsumerWidget {
   final Note note;
   final int pagesRead;
+  final int activeSeconds;
 
-  const _NoteRow({required this.note, required this.pagesRead});
+  const _NoteRow({required this.note, required this.pagesRead, required this.activeSeconds});
 
   void _showContextSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
@@ -552,7 +611,11 @@ class _NoteRow extends ConsumerWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '$pagesRead of ${note.totalPages} pages read',
+                      activeSeconds > 0
+                          ? '$pagesRead of ${note.totalPages} pages read · ${_formatStudyTime(activeSeconds)}'
+                          : '$pagesRead of ${note.totalPages} pages read',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: context.palette.secondaryText, fontSize: 14),
                     ),
                     const SizedBox(height: 10),

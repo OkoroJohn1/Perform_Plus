@@ -290,7 +290,12 @@ class _NoteReaderScreenState extends ConsumerState<NoteReaderScreen> with Widget
         onPointerMove: (_) => _handleInteraction(),
         child: Column(
           children: [
-            _TopBar(title: note.title, page: _currentPage + 1, totalPages: note.totalPages),
+            _TopBar(
+              title: note.title,
+              page: _currentPage + 1,
+              totalPages: note.totalPages,
+              activeSeconds: _sessionActiveSeconds,
+            ),
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
@@ -333,12 +338,24 @@ class _NoteReaderScreenState extends ConsumerState<NoteReaderScreen> with Widget
   }
 }
 
+String _formatElapsed(int seconds) {
+  final m = seconds ~/ 60;
+  final s = seconds % 60;
+  return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+}
+
 class _TopBar extends StatelessWidget {
   final String title;
   final int page;
   final int totalPages;
+  final int activeSeconds;
 
-  const _TopBar({required this.title, required this.page, required this.totalPages});
+  const _TopBar({
+    required this.title,
+    required this.page,
+    required this.totalPages,
+    required this.activeSeconds,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -361,13 +378,21 @@ class _TopBar extends StatelessWidget {
               style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
-          SizedBox(
-            width: 56,
-            child: Text(
-              '$page / $totalPages',
-              textAlign: TextAlign.right,
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 15),
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.timer_outlined, size: 13, color: Colors.white.withValues(alpha: 0.55)),
+              const SizedBox(width: 3),
+              Text(
+                _formatElapsed(activeSeconds),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 13),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                '$page / $totalPages',
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 15),
+              ),
+            ],
           ),
         ],
       ),
