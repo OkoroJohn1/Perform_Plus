@@ -61,10 +61,8 @@ class AppConstants {
 
   /// The AI Advisor tab's insight cards are template-generated from
   /// `CgpaEngine`/`ProjectionSolver` output and work today with no backend.
-  /// Real conversational chat needs a Supabase Edge Function proxy (API key
-  /// server-side, function-calling only, rate-limited) that does not exist
-  /// yet — see `advisor_chat_sheet.dart`'s honest "coming soon" stub. Flip
-  /// this once that backend ships; the stub UI is built to swap out for the
-  /// real chat surface without other changes.
-  static const enableAdvisorChat = false;
+  /// Real conversational chat is now wired to the `ai-advisor` Supabase
+  /// Edge Function (API key server-side, rate-limited via
+  /// `advisor_chat_requests`) — see `advisor_chat_sheet.dart`.
+  static const enableAdvisorChat = true;
 }

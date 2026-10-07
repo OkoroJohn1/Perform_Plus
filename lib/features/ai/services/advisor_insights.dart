@@ -308,3 +308,44 @@ Insight _insufficientDataInsight() => const Insight(
       body: 'With one semester we can compute what you need, but not how it '
           'compares to your usual performance.',
     );
+
+/// The payload sent to the `ai-advisor` Edge Function as chat "context" --
+/// the chat counterpart to this file's insight cards, built from the exact
+/// same already-computed [AdvisorState]/[AcademicStanding]/[TargetProjection]
+/// rather than anything re-derived. Per AGENTS.md's "THE RULE THAT MATTERS
+/// MOST", the model receives these computed facts and phrases them; it is
+/// never given [rawSemesters] or any per-course grade to reason about
+/// itself, which is why this function's signature doesn't even accept them.
+Map<String, dynamic> buildAdvisorChatContext({
+  required AdvisorState state,
+  required AcademicStanding standing,
+  required StudentProfile? profile,
+  required ClassificationBand? goalBand,
+  required TargetProjection? goalProjection,
+}) {
+  return {
+    'has_data': state.hasData,
+    'is_critical': state.isCritical,
+    'cgpa': state.hasData ? standing.cgpa : null,
+    'classification_label': standing.classification?.label,
+    'level': profile?.currentLevel,
+    'department': profile?.department,
+    'faculty': profile?.faculty,
+    'semesters_recorded': standing.semesters.length,
+    'best_semester_gpa': standing.bestSemesterGpa,
+    'recent_trend_delta': standing.recentTrend(),
+    'goal_classification_label': goalBand?.label,
+    'goal_projection': goalProjection?.toAdvisorPayload(),
+    'critical_standing': state.critical == null
+        ? null
+        : {
+            'cgpa': state.critical!.cgpa,
+            'institution_name': state.critical!.institutionName,
+            'lowest_classification_label': state.critical!.lowestBand.label,
+            'projection_to_lowest_classification': state.critical!.projectionToLowestBand.toAdvisorPayload(),
+          },
+    'insight_cards': state.insights
+        .map((i) => {'kind': i.kind.name, 'title': i.title, 'body': i.body})
+        .toList(),
+  };
+}

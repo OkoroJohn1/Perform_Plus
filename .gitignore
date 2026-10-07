@@ -20,3 +20,8 @@ android/.gradle/
 # actual app asset (assets/institutions/futo.svg); these are the other
 # researched-and-rejected crests and must never enter version control.
 School logos/
+
+# Local Supabase CLI binaries and its scratch dir -- not project source.
+supabase.exe
+supabase-go.exe
+supabase/.temp/
