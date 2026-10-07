@@ -32,6 +32,7 @@ import '../../../data/repositories/academic_record_provider.dart';
 import '../../../domain/models/course_result.dart';
 import '../../../domain/models/grading_scheme.dart';
 import '../services/course_slip_extraction_service.dart';
+import '../services/result_slip_ocr_service.dart';
 
 const _uuid = Uuid();
 
@@ -92,6 +93,26 @@ class _DraftRow {
         creditUnit: c.creditUnit,
         source: ResultSource.ocrImport,
         extractionConfidence: c.confidence,
+      );
+
+  /// From the on-device result-slip scanner -- unlike [fromExtracted], this
+  /// may carry a guessed grade, since that's what makes a result slip a
+  /// result slip. [scheme] gates it: `_RowEditor`'s grade field is a
+  /// `DropdownButtonFormField` whose items are exactly `scheme.grades`, and
+  /// Flutter asserts if `initialValue` isn't one of them (see AGENTS.md's
+  /// "Things not to do" on this exact dropdown-assertion bug) -- an OCR
+  /// misread like "AB" or a stray letter must fall back to no pre-fill
+  /// (the student picks from the dropdown themselves) rather than crash
+  /// the sheet.
+  factory _DraftRow.fromOcrResultLine(ExtractedResultLine r, GradingScheme scheme) => _DraftRow(
+        courseCode: r.courseCode,
+        courseTitle: r.courseTitle ?? '',
+        creditUnit: r.creditUnit != null && r.creditUnit! >= 1 && r.creditUnit! <= AppConstants.maxCreditUnit
+            ? r.creditUnit
+            : null,
+        grade: scheme.grades.any((g) => g.letter == r.grade) ? r.grade : null,
+        source: ResultSource.ocrImport,
+        extractionConfidence: r.confidence,
       );
 
   factory _DraftRow.fromResult(CourseResult r) => _DraftRow(
@@ -298,6 +319,83 @@ class _AddSemesterSheetState extends ConsumerState<AddSemesterSheet> {
     }
   }
 
+  /// On-device counterpart to [_scanSlip] -- a *result* slip (grades
+  /// already issued), read by `result_slip_ocr_service.dart`'s offline ML
+  /// Kit text recognizer rather than the server-side vision model, so it
+  /// works with no connection. See that file's doc comment for why its
+  /// output is always lower-confidence and never pre-fills an invalid
+  /// grade/unit value.
+  Future<void> _scanResultSlip() async {
+    final palette = context.palette;
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: palette.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.photo_camera_outlined, color: palette.primary),
+              title: Text('Take a photo', style: TextStyle(color: palette.bodyText)),
+              onTap: () => Navigator.of(sheetContext).pop(ImageSource.camera),
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library_outlined, color: palette.primary),
+              title: Text('Choose from gallery', style: TextStyle(color: palette.bodyText)),
+              onTap: () => Navigator.of(sheetContext).pop(ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+
+    setState(() {
+      _scanning = true;
+      _scanError = null;
+    });
+
+    try {
+      final path = await pickResultSlipImagePath(source);
+      if (path == null) {
+        if (mounted) setState(() => _scanning = false);
+        return;
+      }
+
+      final extracted = await extractResultsFromImage(path);
+      if (!mounted) return;
+
+      if (extracted.isEmpty) {
+        setState(() {
+          _scanning = false;
+          _scanError = "Couldn't find any course rows on that slip. Try a clearer photo or enter courses manually.";
+        });
+        return;
+      }
+
+      final scheme = ref.read(academicRecordProvider).scheme;
+      setState(() {
+        final draftRows = extracted.map((r) => _DraftRow.fromOcrResultLine(r, scheme)).toList();
+        final hasManualInput = _rows.any((r) => r.hasAnyInput);
+        _rows = hasManualInput ? [..._rows, ...draftRows] : draftRows;
+        _scanning = false;
+      });
+    } on ResultSlipOcrException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _scanning = false;
+        _scanError = e.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _scanning = false;
+        _scanError = 'Something went wrong reading that slip. Try again or enter courses manually.';
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
@@ -395,6 +493,28 @@ class _AddSemesterSheetState extends ConsumerState<AddSemesterSheet> {
                             )
                           : const Icon(Icons.document_scanner_outlined),
                       label: Text(_scanning ? 'Reading slip…' : 'Scan registration slip'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      key: const ValueKey('scanResultSlipTap'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: palette.secondaryText,
+                        side: BorderSide(color: palette.surfaceBorder),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: _scanning ? null : _scanResultSlip,
+                      icon: _scanning
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: palette.secondaryText),
+                            )
+                          : const Icon(Icons.offline_bolt_outlined),
+                      label: Text(_scanning ? 'Reading slip…' : 'Scan result slip (offline)'),
                     ),
                   ),
                   if (_scanError != null) ...[

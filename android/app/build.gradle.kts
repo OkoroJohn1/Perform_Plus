@@ -22,6 +22,10 @@ android {
         applicationId = "com.perform.perform_plus"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
+        // google_mlkit_text_recognition requires 21+. flutter.minSdkVersion
+        // is currently 24, well above that, so left as the Flutter default
+        // -- a hardcoded 21 here gets silently reverted back to this by
+        // `flutter build`'s own project-template sync on every build.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -33,6 +37,14 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // google_mlkit_text_recognition needs the `-dontwarn` rules in
+            // proguard-rules.pro below -- without them R8 fails release
+            // minification on "missing class" errors for script options
+            // (Chinese/Japanese/...) this app never actually uses.
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }

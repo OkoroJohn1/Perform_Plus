@@ -1,7 +1,7 @@
 name: perform_plus
 description: Academic performance tracking and AI advisory for Nigerian students.
 publish_to: none
-version: 0.2.1+4
+version: 0.2.2+5
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -39,6 +39,13 @@ dependencies:
 
   # Result slip import
   image_picker: ^1.1.2
+
+  # On-device OCR for scanning a result slip (not a registration slip --
+  # see result_slip_ocr_service.dart's doc comment). Fully offline, no
+  # API key: the model ships in the ML Kit library/Play Services and runs
+  # on-device, unlike the registration-slip path which calls a server-side
+  # vision model.
+  google_mlkit_text_recognition: ^0.13.0
 
   # Crop/resize/re-encode a picked profile photo before it ever touches
   # disk or a network call — a raw phone photo is several MB for something

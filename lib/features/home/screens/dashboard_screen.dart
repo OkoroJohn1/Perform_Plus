@@ -36,6 +36,7 @@ import '../../auth/providers/profile_provider.dart';
 import '../../auth/providers/security_questions_provider.dart';
 import '../../auth/screens/pin_prompt_dialog.dart';
 import '../../auth/screens/security_questions_prompt_dialog.dart';
+import '../../academics/widgets/add_semester_sheet.dart';
 import '../widgets/cgpa_card.dart';
 import '../widgets/credit_load_split_card.dart';
 import '../widgets/next_action_card.dart';
@@ -157,11 +158,35 @@ class _DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                   ),
                 ),
+                const _ScanResultSlipButton(),
                 const _NotificationBell(),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Dashboard entry point for the on-device result-slip scanner -- this
+/// app uses modal sheets rather than pushed routes for "add a semester"
+/// (see `routes.dart`: only the five tabs and notifications are actual
+/// routes), so "reachable from the dashboard" means opening the same
+/// sheet Academics/Backfill already use, not a new standalone screen.
+class _ScanResultSlipButton extends StatelessWidget {
+  const _ScanResultSlipButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: IconButton(
+        key: const ValueKey('dashboardScanResultSlipTap'),
+        icon: const Icon(Icons.document_scanner_outlined, size: 22, color: Color(0xFF4B5563)),
+        tooltip: 'Scan result slip',
+        onPressed: () => showAddSemesterSheet(context),
       ),
     );
   }
