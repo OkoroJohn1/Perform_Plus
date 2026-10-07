@@ -1486,18 +1486,27 @@ void _showAppLockSheet(BuildContext context, WidgetRef ref, bool isSet) {
           ),
           Divider(height: 1, color: context.palette.divider),
           Consumer(
-            // Named `_` deliberately, NOT `context` -- shadowing the outer
-            // `_showAppLockSheet(BuildContext context, ...)` parameter with
-            // this Consumer's own context was the bug: that inner context
-            // belongs to this bottom sheet, which `Navigator.of(sheetContext)
-            // .pop()` below closes immediately on tap. By the time the PIN
-            // pad's `onVerified` callback fires (seconds later, after the
-            // student finishes entering their PIN), that context was long
-            // unmounted, so `showSecurityQuestionsSetupSheet` silently
-            // failed and the student saw nothing happen. The outer `context`
-            // belongs to the Me tab screen itself, which stays mounted.
-            builder: (_, ref, __) {
-              final hasQuestions = ref.watch(securityQuestionsProvider.select((s) => s.hasQuestions));
+            // Named `_`/`localRef` deliberately, NOT `context`/`ref` --
+            // shadowing the outer `_showAppLockSheet(BuildContext context,
+            // WidgetRef ref, ...)` parameters with THIS Consumer's own was
+            // the bug, and it bit twice: the first fix caught `context`
+            // (used for `Navigator`/`showSecurityQuestionsSetupSheet`) but
+            // missed that `ref` has the exact same problem -- a Consumer's
+            // `WidgetRef` is just as tied to its own element's lifecycle as
+            // its `BuildContext` is. `Navigator.of(sheetContext).pop()`
+            // below closes this whole sheet (and this Consumer) immediately
+            // on tap; by the time the PIN pad's `onComplete` callback fires
+            // seconds later and calls `ref.read(pinProvider.notifier)
+            // .verify(pin)`, that `ref` belonged to an already-disposed
+            // element, which Riverpod rejects -- the thrown error was never
+            // caught, so the PIN pad just sat there looking like nothing
+            // happened, the exact symptom reported. `localRef` below is
+            // still correct to use for the reactive `.watch` that makes
+            // this row's label update live; only the long-lived outer
+            // `context`/`ref` (the Me tab screen itself, which stays
+            // mounted) may cross into the `onTap` closure.
+            builder: (_, localRef, __) {
+              final hasQuestions = localRef.watch(securityQuestionsProvider.select((s) => s.hasQuestions));
               return ListTile(
                 key: const ValueKey('securityQuestionsTap'),
                 leading: const Icon(Icons.quiz_outlined),

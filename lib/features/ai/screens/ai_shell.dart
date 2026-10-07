@@ -26,6 +26,7 @@ import '../../../shared/widgets/advisor_mark.dart';
 import '../../../shared/widgets/glass_top_bar.dart';
 import '../../../shared/widgets/app_drawer.dart';
 import '../../auth/providers/profile_provider.dart';
+import '../../../shared/widgets/gradient_button.dart';
 import '../../home/screens/notifications_panel.dart';
 import '../services/advisor_insights.dart';
 import 'advisor_chat_screen.dart';
@@ -596,25 +597,69 @@ class _EmptyAdvisor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return ListView(
       padding: const EdgeInsets.only(top: 16),
       children: [
         _GreetingCard(firstName: firstName, isCritical: false),
-        const SizedBox(height: 40),
-        const Icon(Icons.insights_outlined, size: 44, color: Color(0xFFD1D5DB)),
-        const SizedBox(height: 16),
+        const SizedBox(height: 36),
         Center(
-          child: Text(
-            "Add a semester and I'll have something to say",
-            textAlign: TextAlign.center,
-            style: TextStyle(color: context.palette.secondaryText, fontSize: 16),
+          child: Container(
+            width: 112,
+            height: 112,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [palette.primary.withValues(alpha: 0.16), palette.primary.withValues(alpha: 0.04)],
+              ),
+            ),
+            child: Container(
+              width: 76,
+              height: 76,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: palette.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: palette.primary.withValues(alpha: 0.18),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Icon(Icons.insights_outlined, size: 34, color: palette.primary),
+            ),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 28),
         Center(
-          child: FilledButton(
+          child: Text(
+            "I'll have something to say once you've added a semester",
+            textAlign: TextAlign.center,
+            style: TextStyle(color: palette.bodyText, fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 280),
+            child: Text(
+              'Your insights, goal pace and trend all compute from real results — nothing invented.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: palette.secondaryText, fontSize: 14.5, height: 1.4),
+            ),
+          ),
+        ),
+        const SizedBox(height: 28),
+        Center(
+          child: GradientButton.icon(
             onPressed: () => context.go(Routes.academics),
-            child: const Text('Add results'),
+            icon: const Icon(Icons.add_circle_outline, size: 20),
+            label: const Text('Add your first semester'),
           ),
         ),
       ],

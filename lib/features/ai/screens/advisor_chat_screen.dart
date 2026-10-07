@@ -22,7 +22,7 @@ import '../../../data/repositories/goal_provider.dart';
 import '../../../shared/widgets/advisor_mark.dart';
 import '../../../shared/widgets/glass_top_bar.dart';
 import '../../auth/providers/profile_provider.dart';
-import '../services/advisor_chat_service.dart';
+import '../providers/advisor_chat_provider.dart';
 import '../services/advisor_insights.dart';
 
 void openAdvisorChat(BuildContext context) => context.push(Routes.advisorChat);
@@ -73,14 +73,37 @@ class AdvisorChatScreen extends ConsumerWidget {
   }
 }
 
-class _AdvisorChatAppBar extends StatelessWidget implements PreferredSizeWidget {
+class _AdvisorChatAppBar extends ConsumerWidget implements PreferredSizeWidget {
   const _AdvisorChatAppBar();
 
   @override
   Size get preferredSize => const Size.fromHeight(64);
 
+  Future<void> _confirmClear(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Clear this conversation?'),
+        content: const Text('Your chat history with Performia will be deleted. This can’t be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
+          FilledButton(
+            key: const ValueKey('clearAdvisorChatConfirmTap'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ref.read(advisorChatHistoryProvider.notifier).clear();
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasMessages = ref.watch(advisorChatHistoryProvider.select((s) => s.messages.isNotEmpty));
+
     return TopBarGlassBackground(
       child: SafeArea(
         bottom: false,
@@ -112,6 +135,17 @@ class _AdvisorChatAppBar extends StatelessWidget implements PreferredSizeWidget 
                     ),
                   ),
                 ),
+                if (hasMessages)
+                  SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: IconButton(
+                      key: const ValueKey('clearAdvisorChatTap'),
+                      icon: Icon(Icons.delete_outline, size: 22, color: context.palette.secondaryText),
+                      tooltip: 'Clear conversation',
+                      onPressed: () => _confirmClear(context, ref),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -121,29 +155,19 @@ class _AdvisorChatAppBar extends StatelessWidget implements PreferredSizeWidget 
   }
 }
 
-class _ChatMessage {
-  final bool isUser;
-  final String text;
-  final bool isError;
-
-  const _ChatMessage({required this.isUser, required this.text, this.isError = false});
-}
-
-class _RealChat extends StatefulWidget {
+class _RealChat extends ConsumerStatefulWidget {
   final Map<String, dynamic> context;
   final List<String> activeTitles;
 
   const _RealChat({required this.context, required this.activeTitles});
 
   @override
-  State<_RealChat> createState() => _RealChatState();
+  ConsumerState<_RealChat> createState() => _RealChatState();
 }
 
-class _RealChatState extends State<_RealChat> {
-  final _messages = <_ChatMessage>[];
+class _RealChatState extends ConsumerState<_RealChat> {
   final _textController = TextEditingController();
   final _listController = ScrollController();
-  bool _sending = false;
 
   @override
   void dispose() {
@@ -164,55 +188,22 @@ class _RealChatState extends State<_RealChat> {
   }
 
   Future<void> _send(String text) async {
-    final trimmed = text.trim();
-    if (trimmed.isEmpty || _sending) return;
-
-    // The conversation so far, BEFORE this new message is appended -- it's
-    // sent to the function separately as `message`, not duplicated into
-    // `history`.
-    final history = _messages
-        .where((m) => !m.isError)
-        .map((m) => AdvisorChatTurn(isUser: m.isUser, text: m.text))
-        .toList();
-
-    setState(() {
-      _messages.add(_ChatMessage(isUser: true, text: trimmed));
-      _sending = true;
-    });
+    if (text.trim().isEmpty) return;
     _textController.clear();
     _scrollToBottom();
-
-    try {
-      final reply = await sendAdvisorMessage(message: trimmed, context: widget.context, history: history);
-      if (!mounted) return;
-      setState(() {
-        _messages.add(_ChatMessage(isUser: false, text: reply));
-        _sending = false;
-      });
-    } on AdvisorChatException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _messages.add(_ChatMessage(isUser: false, text: e.message, isError: true));
-        _sending = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _messages.add(
-          const _ChatMessage(isUser: false, text: 'Something went wrong. Try again.', isError: true),
-        );
-        _sending = false;
-      });
-    }
+    await ref.read(advisorChatHistoryProvider.notifier).send(text, context: widget.context);
     _scrollToBottom();
   }
 
   @override
   Widget build(BuildContext context) {
+    final chat = ref.watch(advisorChatHistoryProvider);
+    final messages = chat.messages;
+
     return Column(
       children: [
         Expanded(
-          child: _messages.isEmpty
+          child: messages.isEmpty
               ? _EmptyChatPrompt(
                   activeTitles: widget.activeTitles,
                   onTapSuggestion: (title) => _send('Tell me more about "$title".'),
@@ -220,17 +211,17 @@ class _RealChatState extends State<_RealChat> {
               : ListView.builder(
                   controller: _listController,
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  itemCount: _messages.length + (_sending ? 1 : 0),
+                  itemCount: messages.length + (chat.sending ? 1 : 0),
                   itemBuilder: (context, i) {
-                    if (i == _messages.length) return const _TypingBubble();
-                    return _ChatBubble(message: _messages[i]);
+                    if (i == messages.length) return const _TypingBubble();
+                    return _ChatBubble(message: messages[i]);
                   },
                 ),
         ),
         _ChatInputBar(
           key: const ValueKey('advisorChatInputBar'),
           controller: _textController,
-          sending: _sending,
+          sending: chat.sending,
           onSend: _send,
         ),
       ],
@@ -239,7 +230,7 @@ class _RealChatState extends State<_RealChat> {
 }
 
 class _ChatBubble extends StatelessWidget {
-  final _ChatMessage message;
+  final AdvisorChatMessage message;
 
   const _ChatBubble({required this.message});
 

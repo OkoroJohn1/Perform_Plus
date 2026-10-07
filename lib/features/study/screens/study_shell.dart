@@ -20,6 +20,7 @@ import '../../home/screens/notifications_panel.dart';
 import '../providers/study_plan_provider.dart';
 import '../widgets/note_illustration.dart';
 import '../widgets/study_calendar_card.dart';
+import '../widgets/study_time_breakdown_card.dart';
 import '../widgets/upload_note_sheet.dart';
 import 'study_advice_reveal_screen.dart';
 
@@ -30,16 +31,6 @@ int _pagesRead(NotesState state, Note note) => state.pagesReadFor(note.id);
 
 bool _isCompleted(NotesState state, Note note) =>
     note.totalPages > 0 && _pagesRead(state, note) >= note.totalPages;
-
-/// "42m" under an hour, "1h 05m" at or beyond -- matches the aggregate
-/// "Study hours" tile's precision at a glance without needing a decimal.
-String _formatStudyTime(int seconds) {
-  final totalMinutes = seconds ~/ 60;
-  if (totalMinutes < 60) return '${totalMinutes}m';
-  final hours = totalMinutes ~/ 60;
-  final minutes = totalMinutes % 60;
-  return '${hours}h ${minutes.toString().padLeft(2, '0')}m';
-}
 
 void _openReader(BuildContext context, String noteId) {
   Navigator.of(context).push(
@@ -76,6 +67,8 @@ class StudyShell extends ConsumerWidget {
                 const _SectionHeader(title: 'Study overview'),
                 const SizedBox(height: 12),
                 _StudyOverview(state: notesState),
+                const SizedBox(height: 20),
+                StudyTimeBreakdownCard(state: notesState),
                 const SizedBox(height: 26),
                 _MyNotesSection(state: notesState),
                 const SizedBox(height: 16),
@@ -612,7 +605,7 @@ class _NoteRow extends ConsumerWidget {
                     const SizedBox(height: 3),
                     Text(
                       activeSeconds > 0
-                          ? '$pagesRead of ${note.totalPages} pages read · ${_formatStudyTime(activeSeconds)}'
+                          ? '$pagesRead of ${note.totalPages} pages read · ${formatStudyTime(activeSeconds)}'
                           : '$pagesRead of ${note.totalPages} pages read',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -897,7 +890,7 @@ class _StudyToolsGrid extends StatelessWidget {
                 color: const Color(0xFFEA580C),
                 width: (constraints.maxWidth - 12) / 2,
                 locked: true,
-                lockedMessage: "Performance needs the AI service, which isn't connected yet.",
+                lockedMessage: "Study performance analytics aren't built yet — coming in a future update.",
               ),
             ],
           );

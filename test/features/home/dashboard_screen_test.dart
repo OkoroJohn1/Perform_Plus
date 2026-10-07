@@ -411,7 +411,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Add your first semester to see your dashboard'), findsOneWidget);
-    expect(find.text('Add results'), findsOneWidget);
+    expect(find.text('Your dashboard is waiting'), findsOneWidget);
+    expect(find.text('Add your first semester'), findsOneWidget);
   });
 }

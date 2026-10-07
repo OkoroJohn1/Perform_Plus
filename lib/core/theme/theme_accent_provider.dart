@@ -24,7 +24,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/local/daos/local_settings_dao.dart';
 import '../../data/repositories/repository_providers.dart';
 
-enum AppAccent { blue, red, green, beige }
+enum AppAccent { blue, red, green, beige, lightBlue, purple }
 
 extension AppAccentColors on AppAccent {
   String get label => switch (this) {
@@ -32,6 +32,8 @@ extension AppAccentColors on AppAccent {
         AppAccent.red => 'Red',
         AppAccent.green => 'Green',
         AppAccent.beige => 'Beige',
+        AppAccent.lightBlue => 'Light Blue',
+        AppAccent.purple => 'Purple',
       };
 
   Color get primary => switch (this) {
@@ -39,6 +41,8 @@ extension AppAccentColors on AppAccent {
         AppAccent.red => const Color(0xFFDC2626),
         AppAccent.green => const Color(0xFF16A34A),
         AppAccent.beige => const Color(0xFF9C7A54),
+        AppAccent.lightBlue => const Color(0xFF0EA5E9),
+        AppAccent.purple => const Color(0xFF9333EA),
       };
 
   Color get gradientStart => switch (this) {
@@ -46,6 +50,8 @@ extension AppAccentColors on AppAccent {
         AppAccent.red => const Color(0xFFEF4444),
         AppAccent.green => const Color(0xFF22C55E),
         AppAccent.beige => const Color(0xFFB79572),
+        AppAccent.lightBlue => const Color(0xFF38BDF8),
+        AppAccent.purple => const Color(0xFFA855F7),
       };
 
   Color get gradientEnd => switch (this) {
@@ -53,6 +59,8 @@ extension AppAccentColors on AppAccent {
         AppAccent.red => const Color(0xFFB91C1C),
         AppAccent.green => const Color(0xFF15803D),
         AppAccent.beige => const Color(0xFF7A5F3F),
+        AppAccent.lightBlue => const Color(0xFF0284C7),
+        AppAccent.purple => const Color(0xFF7E22CE),
       };
 }
 

@@ -128,29 +128,58 @@ class _EmptyResults extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.school_outlined, size: 48, color: context.palette.emptyIcon),
-            const SizedBox(height: 16),
-            Text(
-              'No results yet',
-              style: TextStyle(
-                color: context.palette.bodyText,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+            Container(
+              width: 112,
+              height: 112,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [palette.primary.withValues(alpha: 0.16), palette.primary.withValues(alpha: 0.04)],
+                ),
+              ),
+              child: Container(
+                width: 76,
+                height: 76,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: palette.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: palette.primary.withValues(alpha: 0.18),
+                      blurRadius: 24,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Icon(Icons.school_outlined, size: 34, color: palette.primary),
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 28),
             Text(
-              'Add your first semester to see your record',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: context.palette.secondaryText, fontSize: 15.5),
+              'No results yet',
+              style: TextStyle(color: palette.bodyText, fontSize: 21, fontWeight: FontWeight.w700),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 280),
+              child: Text(
+                'Add your first semester and your classification, carryovers and roadmap all show up right here.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: palette.secondaryText, fontSize: 15, height: 1.4),
+              ),
+            ),
+            const SizedBox(height: 28),
             _AddSemesterButton(onPressed: () => showAddSemesterSheet(context)),
           ],
         ),
