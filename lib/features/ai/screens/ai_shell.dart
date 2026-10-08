@@ -572,14 +572,14 @@ class _AskButtonState extends State<_AskButton> {
                   ),
               ],
             ),
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.chat_bubble_outline, size: 20, color: Colors.white),
-                SizedBox(width: 12),
+                Icon(Icons.chat_bubble_outline, size: 20, color: context.palette.onPrimary),
+                const SizedBox(width: 12),
                 Text(
                   'Ask about your results',
-                  style: TextStyle(color: Colors.white, fontSize: 17.5, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: context.palette.onPrimary, fontSize: 17.5, fontWeight: FontWeight.w600),
                 ),
               ],
             ),

@@ -72,10 +72,6 @@ class AppTheme {
       );
 
   static ThemeData _build({required Brightness brightness, required AppAccent accent}) {
-    final scheme = ColorScheme.fromSeed(
-      seedColor: accent.primary,
-      brightness: brightness,
-    );
     final isDark = brightness == Brightness.dark;
     final onSurface = isDark ? Colors.white : OnboardingLightPalette.bodyText;
     final surfaceTint = isDark ? Colors.white : Colors.black;
@@ -85,6 +81,27 @@ class AppTheme {
       accentPrimary: accent.primary,
       accentGradientStart: accent.gradientStart,
       accentGradientEnd: accent.gradientEnd,
+    );
+    // `ColorScheme.fromSeed` derives every role from the seed's HCT hue --
+    // fine for a saturated accent, but a zero-chroma seed (White) has no
+    // real hue to derive from, and Material's algorithm falls back to an
+    // arbitrary default hue (a pale blue) for `primary`/`secondary`. Every
+    // *generic* Material control (Switch, Checkbox, RadioListTile, the
+    // default FAB, ...) reads those roles straight off this ambient
+    // ColorScheme, as do several screens' own `Theme.of(context)
+    // .colorScheme.primary` reads (see `me_shell.dart`) -- both would
+    // silently show that fallback blue instead of the White accent the
+    // student actually picked. Overriding the roles this app actually
+    // touches with the same contrast-safe values `AppPalette` already
+    // computes keeps every reader of either API in agreement, for every
+    // accent, not only the saturated ones where the seed algorithm
+    // happens to land close to the original colour anyway.
+    final scheme = ColorScheme.fromSeed(
+      seedColor: accent.primary,
+      brightness: brightness,
+    ).copyWith(
+      primary: palette.primary,
+      onPrimary: palette.onPrimary,
     );
 
     return ThemeData(

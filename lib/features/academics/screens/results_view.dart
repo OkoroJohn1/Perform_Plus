@@ -204,6 +204,7 @@ class _StandingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final totalCourses = rawSemesters.fold<int>(0, (sum, s) => sum + s.results.length);
+    final onPrimary = context.palette.onPrimary;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -229,19 +230,19 @@ class _StandingCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.grade_outlined, size: 16, color: Colors.white.withValues(alpha: 0.78)),
+                        Icon(Icons.grade_outlined, size: 16, color: onPrimary.withValues(alpha: 0.78)),
                         const SizedBox(width: 6),
                         Text(
                           'Current CGPA',
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.78), fontSize: 15, fontWeight: FontWeight.w500),
+                          style: TextStyle(color: onPrimary.withValues(alpha: 0.78), fontSize: 15, fontWeight: FontWeight.w500),
                         ),
                       ],
                     ),
                     const SizedBox(height: 6),
                     Text(
                       _fmt(standing.cgpa),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: onPrimary,
                         fontSize: 40,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -1,
@@ -255,14 +256,14 @@ class _StandingCard extends StatelessWidget {
                           color: lowPerformanceColor.withValues(alpha: 0.24),
                           borderRadius: BorderRadius.circular(999),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.warning_amber_rounded, size: 12, color: Colors.white),
-                            SizedBox(width: 4),
+                            Icon(Icons.warning_amber_rounded, size: 12, color: onPrimary),
+                            const SizedBox(width: 4),
                             Text(
                               'Below 3.50',
-                              style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700),
+                              style: TextStyle(color: onPrimary, fontSize: 11.5, fontWeight: FontWeight.w700),
                             ),
                           ],
                         ),
@@ -272,7 +273,7 @@ class _StandingCard extends StatelessWidget {
                     Text(
                       standing.classification?.shortLabel ?? 'Not yet classified',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: onPrimary.withValues(alpha: 0.9),
                         fontSize: 16.5,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1019,14 +1020,14 @@ class _AddSemesterButtonState extends State<_AddSemesterButton> {
                   ),
               ],
             ),
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.add_circle_outline, size: 20, color: Colors.white),
-                SizedBox(width: 12),
+                Icon(Icons.add_circle_outline, size: 20, color: context.palette.onPrimary),
+                const SizedBox(width: 12),
                 Text(
                   'Add semester results',
-                  style: TextStyle(color: Colors.white, fontSize: 17.5, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: context.palette.onPrimary, fontSize: 17.5, fontWeight: FontWeight.w600),
                 ),
               ],
             ),

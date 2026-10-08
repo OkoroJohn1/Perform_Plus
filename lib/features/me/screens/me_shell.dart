@@ -444,7 +444,7 @@ class _IdentityCard extends StatelessWidget {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2.5),
                     ),
-                    child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                    child: Icon(Icons.camera_alt, size: 14, color: context.palette.onPrimary),
                   ),
                 ),
               ),
@@ -476,7 +476,7 @@ class _IdentityCard extends StatelessWidget {
               onPressed: () => context.push(Routes.profileSetup, extra: true),
               style: FilledButton.styleFrom(
                 backgroundColor: accent,
-                foregroundColor: Colors.white,
+                foregroundColor: context.palette.onPrimary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 elevation: 0,
               ),
@@ -1084,10 +1084,10 @@ class _ChangePasswordFormState extends State<_ChangePasswordForm> {
             style: FilledButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             onPressed: _submitting ? null : _submit,
             child: _submitting
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
+                    child: CircularProgressIndicator(strokeWidth: 2.4, color: context.palette.onPrimary),
                   )
                 : const Text('Update password', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           ),

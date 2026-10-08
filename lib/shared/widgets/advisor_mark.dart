@@ -142,11 +142,20 @@ class _AdvisorMarkPainter extends CustomPainter {
     );
 
     // Eyes/smile need to contrast with whatever `color` the head is
-    // filled with — normally white-on-purple, but the FAB draws a white
-    // head (to sit on its own purple background), which would otherwise
-    // put white eyes on a white head.
+    // filled with — normally white-on-accent, but the FAB draws a white
+    // head (to sit on its own accent-coloured background), which would
+    // otherwise put white eyes on a white head. [neutralFeatureColor] is
+    // only safe to use as that light-head fallback when it's ITSELF dark
+    // enough to show -- for every accent this holds (it's `palette.primary`,
+    // normally a saturated colour), but for the two light accents (White,
+    // Light Blue) `color` defaults to `palette.primary` too, so
+    // `neutralFeatureColor` collapses to the exact same light colour as
+    // the head it's meant to contrast against. A guaranteed-dark final
+    // fallback closes that gap without hardcoding a fixed accent.
+    final lightHeadFeatureColor =
+        neutralFeatureColor.computeLuminance() > 0.5 ? Colors.black87 : neutralFeatureColor;
     final featureColor =
-        color.computeLuminance() > 0.5 ? neutralFeatureColor : Colors.white;
+        color.computeLuminance() > 0.5 ? lightHeadFeatureColor : Colors.white;
 
     final headTop = headRect.top;
     final eyeY = headTop + headHeight * 0.40;

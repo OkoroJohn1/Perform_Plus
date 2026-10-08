@@ -689,12 +689,12 @@ class _UploadButtonState extends State<_UploadButton> {
                   BoxShadow(color: context.palette.primary.withValues(alpha: 0.12), blurRadius: 4, offset: const Offset(0, 2)),
               ],
             ),
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.upload_file, size: 20, color: Colors.white),
-                SizedBox(width: 12),
-                Text('Upload e-note', style: TextStyle(color: Colors.white, fontSize: 17.5, fontWeight: FontWeight.w600)),
+                Icon(Icons.upload_file, size: 20, color: context.palette.onPrimary),
+                const SizedBox(width: 12),
+                Text('Upload e-note', style: TextStyle(color: context.palette.onPrimary, fontSize: 17.5, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
