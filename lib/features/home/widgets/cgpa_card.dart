@@ -26,12 +26,15 @@ String _fmt(double v) => v.toStringAsFixed(2);
 /// variants (see [DashboardPalette] doc) — distinct from [FeasibilityPalette],
 /// which is tuned for text on a white card.
 extension _RingPresentation on Feasibility {
-  Color get ringColor => switch (this) {
+  // `unreachable` takes [onPrimary] rather than a fixed colour -- it's
+  // meant to read as a muted/grey ring against the hero gradient, which a
+  // hardcoded white can't guarantee once the gradient itself is White.
+  Color ringColor(Color onPrimary) => switch (this) {
         Feasibility.secured || Feasibility.comfortable => DashboardPalette.ringSecured,
         Feasibility.withinReach => DashboardPalette.ringWithinReach,
         Feasibility.demanding => DashboardPalette.ringDemanding,
         Feasibility.extremelyDemanding => DashboardPalette.ringExtremelyDemanding,
-        Feasibility.unreachable => Colors.white,
+        Feasibility.unreachable => onPrimary,
       };
 
   double get ringAlpha => this == Feasibility.unreachable ? 0.45 : 1.0;
@@ -100,6 +103,7 @@ class CgpaCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final band = standing.classification;
     final goal = this.goal;
+    final onPrimary = context.palette.onPrimary;
 
     return GestureDetector(
       onTap: () => _openDetail(context),
@@ -134,7 +138,7 @@ class CgpaCard extends StatelessWidget {
                     Text(
                       'Current CGPA',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.78),
+                        color: onPrimary.withValues(alpha: 0.78),
                         fontSize: 15.5,
                         fontWeight: FontWeight.w500,
                       ),
@@ -142,8 +146,8 @@ class CgpaCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       standing.hasData ? _fmt(standing.cgpa) : '—',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: onPrimary,
                         fontSize: 46,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -1.5,
@@ -157,14 +161,14 @@ class CgpaCard extends StatelessWidget {
                           color: lowPerformanceColor.withValues(alpha: 0.24),
                           borderRadius: BorderRadius.circular(999),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.warning_amber_rounded, size: 12, color: Colors.white),
-                            SizedBox(width: 4),
+                            Icon(Icons.warning_amber_rounded, size: 12, color: onPrimary),
+                            const SizedBox(width: 4),
                             Text(
                               'Below 3.50',
-                              style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700),
+                              style: TextStyle(color: onPrimary, fontSize: 11.5, fontWeight: FontWeight.w700),
                             ),
                           ],
                         ),
@@ -174,7 +178,7 @@ class CgpaCard extends StatelessWidget {
                     Text(
                       band?.shortLabel ?? 'Not yet classified',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.88),
+                        color: onPrimary.withValues(alpha: 0.88),
                         fontSize: 17,
                         fontWeight: FontWeight.w500,
                       ),
@@ -185,7 +189,7 @@ class CgpaCard extends StatelessWidget {
               Container(
                 width: 1,
                 margin: const EdgeInsets.symmetric(horizontal: 20),
-                color: Colors.white.withValues(alpha: 0.22),
+                color: onPrimary.withValues(alpha: 0.22),
               ),
               Expanded(
                 flex: 4,
@@ -208,6 +212,7 @@ class _NoGoalPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onPrimary = context.palette.onPrimary;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -215,17 +220,17 @@ class _NoGoalPill extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 44),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.white.withValues(alpha: 0.40), width: 1.5),
+          border: Border.all(color: onPrimary.withValues(alpha: 0.40), width: 1.5),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.flag_outlined, size: 18, color: Colors.white),
-            SizedBox(width: 8),
+            Icon(Icons.flag_outlined, size: 18, color: onPrimary),
+            const SizedBox(width: 8),
             Text(
               'Set a goal',
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(color: onPrimary, fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -253,7 +258,7 @@ class _GoalColumn extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.78),
+            color: context.palette.onPrimary.withValues(alpha: 0.78),
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -264,7 +269,7 @@ class _GoalColumn extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            color: goal.feasibility.ringColor.withValues(alpha: goal.feasibility.ringAlpha),
+            color: goal.feasibility.ringColor(context.palette.onPrimary).withValues(alpha: goal.feasibility.ringAlpha),
             fontSize: 15.5,
             fontWeight: FontWeight.w600,
           ),
@@ -309,7 +314,8 @@ class _GoalRingState extends State<_GoalRing> with SingleTickerProviderStateMixi
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.goal.feasibility.ringColor.withValues(alpha: widget.goal.feasibility.ringAlpha);
+    final onPrimary = context.palette.onPrimary;
+    final color = widget.goal.feasibility.ringColor(onPrimary).withValues(alpha: widget.goal.feasibility.ringAlpha);
 
     return SizedBox(
       key: const ValueKey('goalProgressRing'),
@@ -322,11 +328,11 @@ class _GoalRingState extends State<_GoalRing> with SingleTickerProviderStateMixi
           children: [
             CustomPaint(
               size: const Size.square(96),
-              painter: _RingPainter(progress: _value.value, color: color),
+              painter: _RingPainter(progress: _value.value, color: color, trackColor: onPrimary),
             ),
             Text(
               '${(_value.value * 100).round()}%',
-              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
+              style: TextStyle(color: onPrimary, fontSize: 22, fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -338,10 +344,11 @@ class _GoalRingState extends State<_GoalRing> with SingleTickerProviderStateMixi
 class _RingPainter extends CustomPainter {
   final double progress;
   final Color color;
+  final Color trackColor;
 
   static const _strokeWidth = 10.0;
 
-  _RingPainter({required this.progress, required this.color});
+  _RingPainter({required this.progress, required this.color, required this.trackColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -350,7 +357,7 @@ class _RingPainter extends CustomPainter {
     final rect = Rect.fromCircle(center: center, radius: radius);
 
     final trackPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.22)
+      ..color = trackColor.withValues(alpha: 0.22)
       ..style = PaintingStyle.stroke
       ..strokeWidth = _strokeWidth;
     canvas.drawArc(rect, 0, 6.2832, false, trackPaint);
@@ -382,7 +389,7 @@ class _RingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RingPainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.color != color;
+      oldDelegate.progress != progress || oldDelegate.color != color || oldDelegate.trackColor != trackColor;
 }
 
 /// Full projection breakdown, opened by tapping the hero card.

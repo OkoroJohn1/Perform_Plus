@@ -23,6 +23,7 @@ import '../../../domain/engine/cgpa_engine.dart';
 import '../../../domain/models/course_result.dart';
 import '../../../domain/models/grading_scheme.dart';
 import '../widgets/add_semester_sheet.dart' show showAddSemesterSheet, showEditCourseSheet;
+import '../widgets/slip_wallet_card.dart';
 
 String _fmt(double v) => v.toStringAsFixed(2);
 
@@ -97,6 +98,8 @@ class _ResultsViewState extends ConsumerState<ResultsView> {
               onEditExisting: (id) => _openSemesterDetail(context, scheme, id),
             ),
           ),
+          const SizedBox(height: 20),
+          const SlipWalletCard(),
           const SizedBox(height: 20),
           _PerformanceSummaryCard(standing: standing),
           const SizedBox(height: 20),

@@ -79,26 +79,45 @@ class AppPalette extends ThemeExtension<AppPalette> {
 
   factory AppPalette.resolve({required Brightness brightness, required Color accentPrimary, required Color accentGradientStart, required Color accentGradientEnd}) {
     final isDark = brightness == Brightness.dark;
+    final surface = isDark ? const Color(0xFF201D3C) : Colors.white;
+
+    // `primary` alone is read as a plain foreground colour (icons, selected
+    // tab indicators, text highlights) in roughly 100 places across the app
+    // -- never as a block of colour itself; the gradient fields below are
+    // what hero cards/buttons paint as a filled background. A light accent
+    // (White) would make every one of those ~100 foreground uses disappear
+    // against this same `surface` it sits on, and auditing each call site
+    // individually isn't tractable -- so contrast against `surface` is
+    // guaranteed once, here, for the one field they all share. Only kicks in
+    // when the raw accent is nearly indistinguishable from the surface it'll
+    // be drawn on (today: White in light mode); every existing accent keeps
+    // showing its exact chosen colour unchanged.
+    final primary = _contrastSafeForeground(accentPrimary, surface: surface, isDark: isDark);
+
     return AppPalette(
       background: isDark ? const Color(0xFF0B0A18) : const Color(0xFFF7F7FB),
       // A touch richer/lighter than the old 0xFF18162C -- reads as a
       // genuinely "elevated" card against the background instead of a
       // nearly-identical dark-on-dark smudge, the flat-and-dated look dark
       // mode had before.
-      surface: isDark ? const Color(0xFF201D3C) : Colors.white,
+      surface: surface,
       // Tinted with the chosen accent instead of plain white -- a subtle
       // colour-matched edge glow (premium-glass look, same language as the
       // PIN lock screen / top bars) rather than a generic grey outline,
-      // and personalises to whichever of the four accents is picked.
+      // and personalises to whichever accent is picked.
       surfaceBorder: isDark ? accentPrimary.withValues(alpha: 0.22) : const Color(0xFFE5E5EC),
       bodyText: isDark ? Colors.white : const Color(0xFF0F0F14),
       secondaryText: isDark ? Colors.white.withValues(alpha: 0.70) : const Color(0xFF6B7280),
       hintText: isDark ? Colors.white.withValues(alpha: 0.54) : const Color(0xFF9CA3AF),
       divider: isDark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFECECF1),
-      primary: accentPrimary,
+      primary: primary,
       primaryGradientStart: accentGradientStart,
       primaryGradientEnd: accentGradientEnd,
-      onPrimary: Colors.white,
+      // Was a hardcoded `Colors.white` -- true for every accent except a
+      // light one (White), where white text on a white/near-white gradient
+      // would itself be invisible. Derived from the gradient's own average
+      // luminance so it flips automatically for any future light accent too.
+      onPrimary: _onColorFor(accentGradientStart, accentGradientEnd),
       amber: isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309),
       amberBackground: isDark ? const Color(0x26FBBF24) : const Color(0x14B45309),
       success: isDark ? const Color(0xFF4ADE80) : const Color(0xFF16A34A),
@@ -180,6 +199,24 @@ class AppPalette extends ThemeExtension<AppPalette> {
       disabledText: Color.lerp(disabledText, other.disabledText, t)!,
     );
   }
+}
+
+/// Darkens/lightens [color] just enough to read against [surface] when the
+/// two are too close in luminance to tell apart (today: a White accent
+/// against the light-mode white card). Every other accent's luminance gap
+/// against its own surface is already large, so this is a no-op for them.
+Color _contrastSafeForeground(Color color, {required Color surface, required bool isDark}) {
+  final delta = (color.computeLuminance() - surface.computeLuminance()).abs();
+  if (delta > 0.3) return color;
+  return isDark ? Color.lerp(color, Colors.white, 0.6)! : Color.lerp(color, Colors.black, 0.62)!;
+}
+
+/// Text/icon colour for content drawn ON TOP OF a [a]→[b] gradient fill --
+/// white for every dark/saturated accent, flipping to a near-black for a
+/// light one (White) so it never ends up as white-on-white.
+Color _onColorFor(Color a, Color b) {
+  final avgLuminance = (a.computeLuminance() + b.computeLuminance()) / 2;
+  return avgLuminance > 0.6 ? const Color(0xFF14131F) : Colors.white;
 }
 
 extension AppPaletteContext on BuildContext {

@@ -1,5 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Daily study/CGPA reminders (see
+         lib/core/notifications/local_notification_service.dart).
+         POST_NOTIFICATIONS is the Android 13+ runtime permission the
+         in-app prompt (notification_prompt_dialog.dart) requests directly.
+         RECEIVE_BOOT_COMPLETED lets flutter_local_notifications re-arm a
+         scheduled reminder that was still pending after a reboot, rather
+         than silently losing it. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
         android:label="Perform+"
         android:name="${applicationName}"

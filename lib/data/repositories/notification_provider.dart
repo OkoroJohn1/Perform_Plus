@@ -11,11 +11,13 @@
 library;
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/notifications/local_notification_service.dart';
 import '../../data/seed/nigerian_institutions.dart';
 import '../../domain/engine/cgpa_engine.dart';
 import '../../domain/engine/projection_solver.dart';
@@ -23,21 +25,31 @@ import '../../domain/models/achievement.dart';
 import '../../domain/models/app_notification.dart';
 import '../../domain/models/course_result.dart';
 import '../../domain/models/grading_scheme.dart';
+import '../../domain/models/note.dart';
 import '../../domain/repositories/notification_repository.dart';
 import 'academic_record_provider.dart';
 import 'achievement_provider.dart';
 import 'goal_provider.dart';
+import 'note_provider.dart';
 import 'repository_providers.dart';
 
 const _uuid = Uuid();
 
+/// Hard cap on how many of the two daily-reminder types
+/// (`studyReminder`/`cgpaStandingReminder`) can land in one calendar day --
+/// the user-facing requirement is "1 to 3 a day," never more.
+const dailyReminderCap = 3;
+
 class NotificationsController extends StateNotifier<List<AppNotification>> {
   final NotificationRepository? _repository;
+  final LocalNotificationService? _localNotifications;
+  final Random _random = Random();
 
   late final Future<void> ready;
 
-  NotificationsController(Ref ref, NotificationRepository repository)
+  NotificationsController(Ref ref, NotificationRepository repository, LocalNotificationService localNotifications)
       : _repository = repository,
+        _localNotifications = localNotifications,
         super(const []) {
     ready = _init();
     ref.listen(academicRecordProvider, _onRecordChanged);
@@ -46,8 +58,10 @@ class NotificationsController extends StateNotifier<List<AppNotification>> {
   }
 
   /// Fixed-state constructor for widget tests — no reactive generation, no
-  /// repository writes.
-  NotificationsController.seeded(super.state) : _repository = null {
+  /// repository writes, no OS notifications.
+  NotificationsController.seeded(super.state)
+      : _repository = null,
+        _localNotifications = null {
     ready = Future.value();
   }
 
@@ -100,6 +114,96 @@ class NotificationsController extends StateNotifier<List<AppNotification>> {
     );
     state = [notification, ...state];
     unawaited(_repository?.add(notification));
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
+
+  /// Checked on every app open/resume (see where this is called from:
+  /// `dashboard_screen.dart`'s build and `app.dart`'s resume handler) --
+  /// there is no backend push server in this project, so "daily" here
+  /// means "the next time the app is opened or resumed that day," not a
+  /// literal midnight alarm while the app has never been touched that
+  /// day. Guarantees at least one reminder per calendar day the app is
+  /// used, and never more than [dailyReminderCap].
+  ///
+  /// Each call both appends an in-app row (so it shows in the
+  /// Notifications panel) AND schedules/shows the matching real OS
+  /// notification via [LocalNotificationService] -- the two are meant to
+  /// land together, the row's `createdAt` IS the OS notification's
+  /// delivery time.
+  Future<void> maybeGenerateDailyReminder({
+    required AcademicStanding standing,
+    required List<Note> notes,
+  }) async {
+    final now = DateTime.now();
+    final todayCount = state
+        .where((n) =>
+            (n.type == AppNotificationType.studyReminder ||
+                n.type == AppNotificationType.cgpaStandingReminder) &&
+            _isSameDay(n.createdAt, now))
+        .length;
+    if (todayCount >= dailyReminderCap) return;
+    // The first reminder of the day always fires; beyond that, a
+    // shrinking chance per check keeps most days at 1-2 rather than
+    // always maxing out at 3 just because the student opened the app a
+    // few times.
+    if (todayCount > 0 && _random.nextDouble() > 0.4) return;
+
+    // First one of the day lands right away; later ones in the same
+    // check spread a couple of hours out (capped so nothing lands after
+    // 9pm, rather than bleeding into tomorrow's quota).
+    var deliverAt = todayCount == 0 ? now : now.add(Duration(hours: 2 + _random.nextInt(4)));
+    final cutoff = DateTime(now.year, now.month, now.day, 21);
+    if (deliverAt.isAfter(cutoff)) deliverAt = now;
+
+    final canUseStudy = notes.isNotEmpty;
+    final canUseCgpa = standing.hasData;
+    if (!canUseStudy && !canUseCgpa) return;
+    final useStudy = canUseStudy && (!canUseCgpa || _random.nextBool());
+
+    if (useStudy) {
+      final note = notes.reduce(
+        (a, b) => (a.lastOpenedAt ?? a.uploadedAt).isAfter(b.lastOpenedAt ?? b.uploadedAt) ? a : b,
+      );
+      final content = studyNudgeContent(noteTitle: note.title);
+      await _addReminder(
+        type: AppNotificationType.studyReminder,
+        title: content.title,
+        body: content.body,
+        deliverAt: deliverAt,
+      );
+    } else {
+      final content = cgpaStandingReminderContent(
+        cgpa: standing.cgpa,
+        classificationLabel: standing.classification?.label,
+      );
+      await _addReminder(
+        type: AppNotificationType.cgpaStandingReminder,
+        title: content.title,
+        body: content.body,
+        deliverAt: deliverAt,
+      );
+    }
+  }
+
+  Future<void> _addReminder({
+    required AppNotificationType type,
+    required String title,
+    required String body,
+    required DateTime deliverAt,
+  }) async {
+    final notification = AppNotification(id: _uuid.v4(), type: type, title: title, body: body, createdAt: deliverAt);
+    state = [notification, ...state]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    unawaited(_repository?.add(notification));
+
+    final service = _localNotifications;
+    if (service == null) return;
+    final osId = notification.id.hashCode;
+    if (deliverAt.isAfter(DateTime.now().add(const Duration(seconds: 5)))) {
+      unawaited(service.scheduleOneOff(id: osId, title: title, body: body, when: deliverAt));
+    } else {
+      unawaited(service.showNow(id: osId, title: title, body: body));
+    }
   }
 
   String _institutionName(GradingScheme scheme) =>
@@ -212,5 +316,9 @@ class NotificationsController extends StateNotifier<List<AppNotification>> {
 
 final notificationsProvider =
     StateNotifierProvider<NotificationsController, List<AppNotification>>(
-  (ref) => NotificationsController(ref, ref.watch(notificationRepositoryProvider)),
+  (ref) => NotificationsController(
+    ref,
+    ref.watch(notificationRepositoryProvider),
+    ref.watch(localNotificationServiceProvider),
+  ),
 );

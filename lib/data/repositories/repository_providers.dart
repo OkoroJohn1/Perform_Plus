@@ -13,6 +13,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/notifications/local_notification_service.dart';
 import '../../domain/repositories/academic_record_repository.dart';
 import '../../domain/repositories/achievement_repository.dart';
 import '../../domain/repositories/calendar_repository.dart';
@@ -21,6 +22,7 @@ import '../../domain/repositories/grading_scheme_repository.dart';
 import '../../domain/repositories/note_repository.dart';
 import '../../domain/repositories/notification_repository.dart';
 import '../../domain/repositories/profile_repository.dart';
+import '../../domain/repositories/slip_wallet_repository.dart';
 import '../local/app_database.dart';
 import 'drift_academic_record_repository.dart';
 import 'drift_achievement_repository.dart';
@@ -30,6 +32,7 @@ import 'drift_grading_scheme_repository.dart';
 import 'drift_note_repository.dart';
 import 'drift_notification_repository.dart';
 import 'drift_profile_repository.dart';
+import 'drift_slip_wallet_repository.dart';
 import 'note_remote_sync.dart';
 import 'profile_photo_remote_sync.dart';
 import 'profile_remote_sync.dart';
@@ -73,6 +76,17 @@ final calendarRepositoryProvider = Provider<CalendarRepository>(
 
 final notificationRepositoryProvider = Provider<NotificationRepository>(
   (ref) => DriftNotificationRepository(ref.watch(appDatabaseProvider).notificationDao),
+);
+
+final slipWalletRepositoryProvider = Provider<SlipWalletRepository>(
+  (ref) => DriftSlipWalletRepository(ref.watch(appDatabaseProvider).slipUploadDao),
+);
+
+/// A plain, test-safe singleton (every call internally swallows platform-
+/// channel errors -- see its own doc comment), so unlike the Supabase-
+/// backed `null`-guarded providers above, this never needs try/catch here.
+final localNotificationServiceProvider = Provider<LocalNotificationService>(
+  (ref) => LocalNotificationService(),
 );
 
 /// A generic key-value DAO, not a domain concept -- exposed directly

@@ -24,7 +24,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/local/daos/local_settings_dao.dart';
 import '../../data/repositories/repository_providers.dart';
 
-enum AppAccent { blue, red, green, beige, lightBlue, purple }
+enum AppAccent { blue, red, green, beige, lightBlue, purple, white }
 
 extension AppAccentColors on AppAccent {
   String get label => switch (this) {
@@ -34,6 +34,7 @@ extension AppAccentColors on AppAccent {
         AppAccent.beige => 'Beige',
         AppAccent.lightBlue => 'Light Blue',
         AppAccent.purple => 'Purple',
+        AppAccent.white => 'White',
       };
 
   Color get primary => switch (this) {
@@ -43,6 +44,7 @@ extension AppAccentColors on AppAccent {
         AppAccent.beige => const Color(0xFF9C7A54),
         AppAccent.lightBlue => const Color(0xFF0EA5E9),
         AppAccent.purple => const Color(0xFF9333EA),
+        AppAccent.white => const Color(0xFFFFFFFF),
       };
 
   Color get gradientStart => switch (this) {
@@ -52,6 +54,12 @@ extension AppAccentColors on AppAccent {
         AppAccent.beige => const Color(0xFFB79572),
         AppAccent.lightBlue => const Color(0xFF38BDF8),
         AppAccent.purple => const Color(0xFFA855F7),
+        // A hair off pure white at the gradient's own start -- an
+        // absolutely flat #FFFFFF-to-#FFFFFF-ish fill reads as "no
+        // gradient at all" / a rendering glitch on a white card; this
+        // keeps a faint, genuinely white-reading sheen while still being
+        // a visible two-stop gradient.
+        AppAccent.white => const Color(0xFFFFFFFF),
       };
 
   Color get gradientEnd => switch (this) {
@@ -61,6 +69,7 @@ extension AppAccentColors on AppAccent {
         AppAccent.beige => const Color(0xFF7A5F3F),
         AppAccent.lightBlue => const Color(0xFF0284C7),
         AppAccent.purple => const Color(0xFF7E22CE),
+        AppAccent.white => const Color(0xFFE2E1EC),
       };
 }
 

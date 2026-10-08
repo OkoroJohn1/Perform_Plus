@@ -99,14 +99,24 @@ class _PinPadState extends State<PinPad> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             for (var i = 0; i < pinLength; i++)
-              Container(
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutBack,
                 margin: const EdgeInsets.symmetric(horizontal: 8),
-                width: 16,
-                height: 16,
+                width: i < filled ? 17 : 15,
+                height: i < filled ? 17 : 15,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: i < filled ? color : Colors.transparent,
                   border: Border.all(color: color, width: 1.6),
+                  boxShadow: i < filled
+                      ? [
+                          BoxShadow(
+                              color: color.withValues(alpha: 0.55),
+                              blurRadius: 10,
+                              spreadRadius: 1)
+                        ]
+                      : null,
                 ),
               ),
           ],
@@ -164,25 +174,42 @@ class _PinKey extends StatelessWidget {
   final Color? fillColor;
   final Color? labelColor;
 
-  const _PinKey({required this.label, required this.onTap, this.fillColor, this.labelColor});
+  const _PinKey(
+      {required this.label,
+      required this.onTap,
+      this.fillColor,
+      this.labelColor});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
-      child: Material(
-        color: fillColor ?? context.palette.background,
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          child: SizedBox(
-            width: 64,
-            height: 64,
+      child: Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.10),
+                blurRadius: 8,
+                offset: const Offset(0, 3)),
+          ],
+        ),
+        child: Material(
+          color: fillColor ?? context.palette.background,
+          shape: CircleBorder(
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
             child: Center(
               child: Text(
                 label,
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: labelColor ?? context.palette.bodyText),
+                style: TextStyle(
+                    fontSize: 25,
+                    fontWeight: FontWeight.w600,
+                    color: labelColor ?? context.palette.bodyText),
               ),
             ),
           ),

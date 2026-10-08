@@ -170,11 +170,34 @@ class _RealChatState extends ConsumerState<_RealChat> {
   final _textController = TextEditingController();
   final _listController = ScrollController();
 
+  /// True once the student has scrolled up away from the latest message --
+  /// gates the "jump to latest" arrow above the input bar. Not simply "is
+  /// there overflow": a short conversation that fits on screen has nothing
+  /// to jump to, so the threshold is distance from the bottom, not content
+  /// length.
+  bool _showJumpToLatest = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _listController.addListener(_updateJumpToLatest);
+  }
+
   @override
   void dispose() {
+    _listController.removeListener(_updateJumpToLatest);
     _textController.dispose();
     _listController.dispose();
     super.dispose();
+  }
+
+  void _updateJumpToLatest() {
+    if (!_listController.hasClients) return;
+    final distanceFromBottom = _listController.position.maxScrollExtent - _listController.position.pixels;
+    final shouldShow = distanceFromBottom > 80;
+    if (shouldShow != _showJumpToLatest) {
+      setState(() => _showJumpToLatest = shouldShow);
+    }
   }
 
   void _scrollToBottom({bool jump = false}) {
@@ -217,11 +240,24 @@ class _RealChatState extends ConsumerState<_RealChat> {
                   activeTitles: widget.activeTitles,
                   onTapSuggestion: (title) => _send('Tell me more about "$title".'),
                 )
-              : ListView.builder(
-                  controller: _listController,
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  itemCount: messages.length,
-                  itemBuilder: (context, i) => _ChatBubble(message: messages[i]),
+              : Stack(
+                  children: [
+                    ListView.builder(
+                      controller: _listController,
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      itemCount: messages.length,
+                      itemBuilder: (context, i) => _ChatBubble(message: messages[i]),
+                    ),
+                    if (_showJumpToLatest)
+                      Positioned(
+                        right: 16,
+                        bottom: 10,
+                        child: _JumpToLatestButton(
+                          key: const ValueKey('advisorChatJumpToLatestTap'),
+                          onTap: () => _scrollToBottom(),
+                        ),
+                      ),
+                  ],
                 ),
         ),
         _ChatInputBar(
@@ -231,6 +267,32 @@ class _RealChatState extends ConsumerState<_RealChat> {
           onSend: _send,
         ),
       ],
+    );
+  }
+}
+
+class _JumpToLatestButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _JumpToLatestButton({super.key, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Material(
+      color: palette.surface,
+      shape: const CircleBorder(),
+      elevation: 3,
+      shadowColor: Colors.black.withValues(alpha: 0.25),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: Icon(Icons.keyboard_arrow_down, color: palette.primary, size: 22),
+        ),
+      ),
     );
   }
 }

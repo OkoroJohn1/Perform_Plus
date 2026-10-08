@@ -5,8 +5,6 @@
 /// breakdown list underneath, over a blurred dashboard background.
 library;
 
-import 'dart:ui';
-
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -17,6 +15,7 @@ import '../../../domain/engine/cgpa_engine.dart';
 import '../../../domain/engine/projection_solver.dart';
 import '../../../domain/models/course_result.dart';
 import '../../../domain/models/grading_scheme.dart';
+import '../../../shared/widgets/spin_pop_dialog.dart';
 import 'trend_chart.dart';
 
 String _fmt(double v) => v.toStringAsFixed(2);
@@ -28,27 +27,14 @@ Future<void> showTrendDetail(
   required List<Semester> rawSemesters,
   required TargetProjection? goal,
 }) {
-  return showGeneralDialog(
-    context: context,
-    barrierLabel: 'CGPA trend detail',
-    barrierColor: Colors.transparent,
-    transitionDuration: const Duration(milliseconds: 260),
-    pageBuilder: (context, _, __) => _TrendDetailOverlay(
+  return showSpinPopDetail(
+    context,
+    builder: (context) => _TrendDetailOverlay(
       standing: standing,
       scheme: scheme,
       rawSemesters: rawSemesters,
       goal: goal,
     ),
-    transitionBuilder: (context, animation, _, child) {
-      final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
-      return FadeTransition(
-        opacity: curved,
-        child: ScaleTransition(
-          scale: Tween(begin: 0.96, end: 1.0).animate(curved),
-          child: child,
-        ),
-      );
-    },
   );
 }
 
@@ -71,13 +57,7 @@ class _TrendDetailOverlay extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-            child: ColoredBox(color: Colors.black.withValues(alpha: 0.38)),
-          ),
-        ),
+        const SpinPopScrim(),
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -90,7 +70,16 @@ class _TrendDetailOverlay extends StatelessWidget {
                 ],
               ),
               clipBehavior: Clip.antiAlias,
-              child: Column(
+              // `showGeneralDialog` renders this panel in the Navigator's
+              // Overlay, outside any `Material`/`Scaffold` ancestor -- so
+              // every Text here fell back to Flutter's debug "no Material
+              // ancestor" style, a jarring double underline, which only
+              // ever showed up because nothing before this wrapped the
+              // panel in a `Material` of its own. One `Material` here
+              // fixes every Text inside it at once.
+              child: Material(
+                type: MaterialType.transparency,
+                child: Column(
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 18, 8, 8),
@@ -191,6 +180,7 @@ class _TrendDetailOverlay extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
               ),
             ),
           ),

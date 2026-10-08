@@ -62,12 +62,12 @@ class GradientButton extends StatelessWidget {
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: DefaultTextStyle.merge(
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: palette.onPrimary,
                   fontWeight: FontWeight.w600,
                 ),
                 child: IconTheme.merge(
-                  data: const IconThemeData(color: Colors.white),
+                  data: IconThemeData(color: palette.onPrimary),
                   child: content,
                 ),
               ),

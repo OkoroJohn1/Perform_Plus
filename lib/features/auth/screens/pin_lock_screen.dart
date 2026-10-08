@@ -45,11 +45,23 @@ class PinLockScreen extends ConsumerStatefulWidget {
   ConsumerState<PinLockScreen> createState() => _PinLockScreenState();
 }
 
-class _PinLockScreenState extends ConsumerState<PinLockScreen> {
+class _PinLockScreenState extends ConsumerState<PinLockScreen>
+    with SingleTickerProviderStateMixin {
   final _controller = PinPadController();
   bool _wrong = false;
   bool _checking = false;
   _LockPhase _phase = _LockPhase.pin;
+
+  /// A one-shot fade + rise-in for the glass card on first appearance --
+  /// the screen used to just snap into view fully formed, which read as
+  /// flat/unpolished for something shown on every cold start and every
+  /// resume from background.
+  late final AnimationController _entrance = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 520),
+  )..forward();
+  late final Animation<double> _entranceCurve =
+      CurvedAnimation(parent: _entrance, curve: Curves.easeOutCubic);
 
   // Security-question recovery.
   List<String>? _questions;
@@ -84,6 +96,7 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
   @override
   void dispose() {
     _controller.dispose();
+    _entrance.dispose();
     for (final c in _answerControllers) {
       c.dispose();
     }
@@ -116,7 +129,8 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
       _loadingQuestions = true;
       _sqError = null;
     });
-    final questions = await ref.read(securityQuestionsProvider.notifier).fetchQuestions();
+    final questions =
+        await ref.read(securityQuestionsProvider.notifier).fetchQuestions();
     if (!mounted) return;
     if (questions == null) {
       // Nothing set up (or offline) -- nothing to verify against, so go
@@ -126,7 +140,8 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
     }
     setState(() {
       _questions = questions;
-      _answerControllers = List.generate(questions.length, (_) => TextEditingController());
+      _answerControllers =
+          List.generate(questions.length, (_) => TextEditingController());
       _loadingQuestions = false;
     });
   }
@@ -141,7 +156,8 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
       _verifyingAnswers = true;
       _sqError = null;
     });
-    final ok = await ref.read(securityQuestionsProvider.notifier).verify(answers);
+    final ok =
+        await ref.read(securityQuestionsProvider.notifier).verify(answers);
     if (!mounted) return;
     if (!ok) {
       setState(() {
@@ -165,7 +181,8 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
   Future<void> _sendEmailCode() async {
     final email = ref.read(authStateProvider).valueOrNull?.email;
     if (email == null) {
-      setState(() => _emailError = "We don't have an email on file for this account.");
+      setState(() =>
+          _emailError = "We don't have an email on file for this account.");
       return;
     }
     setState(() {
@@ -183,7 +200,8 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
       if (!mounted) return;
       setState(() {
         _sendingCode = false;
-        _emailError = "Couldn't send a code right now -- check your connection and try again.";
+        _emailError =
+            "Couldn't send a code right now -- check your connection and try again.";
       });
     }
   }
@@ -197,7 +215,9 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
       _emailError = null;
     });
     try {
-      await ref.read(authStateProvider.notifier).verifyPinResetCode(email, code);
+      await ref
+          .read(authStateProvider.notifier)
+          .verifyPinResetCode(email, code);
       if (!mounted) return;
       await _recoverySucceeded();
     } catch (_) {
@@ -222,7 +242,8 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final canUseBiometrics = ref.watch(pinProvider.select((s) => s.canUseBiometrics));
+    final canUseBiometrics =
+        ref.watch(pinProvider.select((s) => s.canUseBiometrics));
     final profile = ref.watch(studentProfileProvider);
 
     return Scaffold(
@@ -244,7 +265,8 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
           ),
           // Soft radial lift behind the card, echoing the splash screen's
           // glow treatment rather than a flat gradient with nothing else
-          // happening in it.
+          // happening in it. A second, tighter glow directly behind where
+          // the card sits adds real depth instead of one flat wash.
           Positioned.fill(
             child: IgnorePointer(
               child: DecoratedBox(
@@ -252,7 +274,26 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
                   gradient: RadialGradient(
                     center: const Alignment(0, -0.5),
                     radius: 1.1,
-                    colors: [Colors.white.withValues(alpha: 0.14), Colors.white.withValues(alpha: 0.0)],
+                    colors: [
+                      Colors.white.withValues(alpha: 0.14),
+                      Colors.white.withValues(alpha: 0.0)
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(0, -0.1),
+                    radius: 0.75,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.10),
+                      Colors.white.withValues(alpha: 0.0)
+                    ],
                   ),
                 ),
               ),
@@ -264,67 +305,100 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
                 padding: const EdgeInsets.all(24),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 400),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(28),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(28, 36, 28, 28),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(28),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.28), width: 1.2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 40,
-                              offset: const Offset(0, 16),
+                  child: FadeTransition(
+                    opacity: _entranceCurve,
+                    child: AnimatedBuilder(
+                      animation: _entranceCurve,
+                      builder: (context, child) => Transform.translate(
+                        offset: Offset(0, 24 * (1 - _entranceCurve.value)),
+                        child: child,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(28),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 26, sigmaY: 26),
+                          child: Container(
+                            padding: const EdgeInsets.fromLTRB(28, 36, 28, 28),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.white.withValues(alpha: 0.16),
+                                  Colors.white.withValues(alpha: 0.08),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(28),
+                              border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.30),
+                                  width: 1.2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.28),
+                                  blurRadius: 44,
+                                  offset: const Offset(0, 18),
+                                ),
+                                BoxShadow(
+                                  color: palette.primaryGradientStart
+                                      .withValues(alpha: 0.22),
+                                  blurRadius: 60,
+                                  spreadRadius: -10,
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _LockAvatar(photoPath: profile?.photoPath, initials: profile?.initials),
-                            const SizedBox(height: 20),
-                            switch (_phase) {
-                              _LockPhase.pin => _PinPhase(
-                                  wrong: _wrong,
-                                  checking: _checking,
-                                  controller: _controller,
-                                  canUseBiometrics: canUseBiometrics,
-                                  onComplete: (pin) {
-                                    setState(() => _wrong = false);
-                                    _onComplete(pin);
-                                  },
-                                  onBiometrics: _tryBiometrics,
-                                  onForgotPin: _beginSecurityQuestionRecovery,
-                                ),
-                              _LockPhase.securityQuestions => _SecurityQuestionsPhase(
-                                  loading: _loadingQuestions,
-                                  verifying: _verifyingAnswers,
-                                  questions: _questions,
-                                  answerControllers: _answerControllers,
-                                  error: _sqError,
-                                  onSubmit: _submitSecurityAnswers,
-                                  onUseEmailInstead: _beginEmailRecovery,
-                                ),
-                              _LockPhase.emailCode => _EmailCodePhase(
-                                  email: ref.watch(authStateProvider).valueOrNull?.email,
-                                  codeSent: _codeSent,
-                                  sending: _sendingCode,
-                                  verifying: _verifyingCode,
-                                  error: _emailError,
-                                  codeController: _emailCodeController,
-                                  onSendCode: _sendEmailCode,
-                                  onVerifyCode: _verifyEmailCode,
-                                ),
-                              _LockPhase.recovered => const Padding(
-                                  padding: EdgeInsets.all(24),
-                                  child: CircularProgressIndicator(color: Colors.white),
-                                ),
-                            },
-                          ],
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _LockAvatar(
+                                    photoPath: profile?.photoPath,
+                                    initials: profile?.initials),
+                                const SizedBox(height: 22),
+                                switch (_phase) {
+                                  _LockPhase.pin => _PinPhase(
+                                      wrong: _wrong,
+                                      checking: _checking,
+                                      controller: _controller,
+                                      canUseBiometrics: canUseBiometrics,
+                                      onComplete: (pin) {
+                                        setState(() => _wrong = false);
+                                        _onComplete(pin);
+                                      },
+                                      onBiometrics: _tryBiometrics,
+                                      onForgotPin:
+                                          _beginSecurityQuestionRecovery,
+                                    ),
+                                  _LockPhase.securityQuestions =>
+                                    _SecurityQuestionsPhase(
+                                      loading: _loadingQuestions,
+                                      verifying: _verifyingAnswers,
+                                      questions: _questions,
+                                      answerControllers: _answerControllers,
+                                      error: _sqError,
+                                      onSubmit: _submitSecurityAnswers,
+                                      onUseEmailInstead: _beginEmailRecovery,
+                                    ),
+                                  _LockPhase.emailCode => _EmailCodePhase(
+                                      email: ref
+                                          .watch(authStateProvider)
+                                          .valueOrNull
+                                          ?.email,
+                                      codeSent: _codeSent,
+                                      sending: _sendingCode,
+                                      verifying: _verifyingCode,
+                                      error: _emailError,
+                                      codeController: _emailCodeController,
+                                      onSendCode: _sendEmailCode,
+                                      onVerifyCode: _verifyEmailCode,
+                                    ),
+                                  _LockPhase.recovered => Padding(
+                                      padding: const EdgeInsets.all(24),
+                                      child: CircularProgressIndicator(
+                                          color: palette.onPrimary),
+                                    ),
+                                },
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -348,39 +422,76 @@ class _LockAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final path = photoPath;
+    final onPrimary = context.palette.onPrimary;
     final ring = Container(
-      width: 84,
-      height: 84,
+      width: 88,
+      height: 88,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.55), width: 1.5),
+        border: Border.all(color: onPrimary.withValues(alpha: 0.65), width: 1.5),
+        // A soft glow behind the avatar (rather than only the drop shadow
+        // every other card on this screen already has) is what makes this
+        // specific element read as the focal point the first moment the
+        // screen appears, instead of just one shape among several.
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 16, offset: const Offset(0, 6)),
+          BoxShadow(color: onPrimary.withValues(alpha: 0.28), blurRadius: 28, spreadRadius: 2),
         ],
       ),
       child: path != null && File(path).existsSync()
           ? ClipOval(
               child: Image(
-                image: ResizeImage(FileImage(File(path)), width: (78 * MediaQuery.devicePixelRatioOf(context)).round()),
+                image: ResizeImage(FileImage(File(path)), width: (82 * MediaQuery.devicePixelRatioOf(context)).round()),
                 fit: BoxFit.cover,
               ),
             )
           : ClipOval(
               child: DecoratedBox(
-                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18)),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [onPrimary.withValues(alpha: 0.22), onPrimary.withValues(alpha: 0.12)],
+                  ),
+                ),
                 child: Center(
                   child: (initials != null && initials!.isNotEmpty)
                       ? Text(
                           initials!,
-                          style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w700),
+                          style: TextStyle(color: onPrimary, fontSize: 27, fontWeight: FontWeight.w700),
                         )
-                      : const Icon(Icons.lock_rounded, size: 34, color: Colors.white),
+                      : Icon(Icons.lock_rounded, size: 34, color: onPrimary),
                 ),
               ),
             ),
     );
-    return ring;
+
+    // A small lock badge overlapping the avatar's edge -- the detail that
+    // reads as "this is a lock screen with your face on it," not just a
+    // generic profile avatar sitting at the top of some other screen.
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        ring,
+        Positioned(
+          right: -2,
+          bottom: -2,
+          child: Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: context.palette.primary,
+              border: Border.all(color: onPrimary.withValues(alpha: 0.9), width: 2),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 6, offset: const Offset(0, 2))],
+            ),
+            child: Icon(Icons.lock_rounded, size: 14, color: onPrimary),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -405,15 +516,21 @@ class _PinPhase extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onPrimary = context.palette.onPrimary;
     return Consumer(
       builder: (context, ref, _) {
         final state = ref.watch(pinProvider);
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'Perform+ is locked',
-              style: TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                color: onPrimary,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
@@ -424,36 +541,45 @@ class _PinPhase extends StatelessWidget {
                   : 'Enter your PIN to continue',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: wrong ? const Color(0xFFFCA5A5) : Colors.white.withValues(alpha: 0.75),
+                color: wrong
+                    ? const Color(0xFFFCA5A5)
+                    : onPrimary.withValues(alpha: 0.75),
                 fontSize: 13.5,
                 fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 28),
             if (checking)
-              const Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: Colors.white))
+              Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: CircularProgressIndicator(color: onPrimary))
             else ...[
               PinPad(
                 controller: controller,
                 onComplete: onComplete,
-                dotColor: Colors.white,
-                keyFillColor: Colors.white.withValues(alpha: 0.12),
-                keyLabelColor: Colors.white,
+                dotColor: onPrimary,
+                keyFillColor: onPrimary.withValues(alpha: 0.12),
+                keyLabelColor: onPrimary,
               ),
               if (canUseBiometrics) ...[
                 const SizedBox(height: 16),
                 TextButton.icon(
                   key: const ValueKey('biometricRetryButton'),
                   onPressed: onBiometrics,
-                  icon: const Icon(Icons.fingerprint, color: Colors.white),
-                  label: const Text('Use fingerprint', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  icon: Icon(Icons.fingerprint, color: onPrimary),
+                  label: Text('Use fingerprint',
+                      style: TextStyle(
+                          color: onPrimary, fontWeight: FontWeight.w600)),
                 ),
               ],
               const SizedBox(height: 4),
               TextButton(
                 key: const ValueKey('forgotPinTap'),
                 onPressed: onForgotPin,
-                child: Text('Forgot PIN?', style: TextStyle(color: Colors.white.withValues(alpha: 0.72), fontWeight: FontWeight.w600)),
+                child: Text('Forgot PIN?',
+                    style: TextStyle(
+                        color: onPrimary.withValues(alpha: 0.72),
+                        fontWeight: FontWeight.w600)),
               ),
             ],
           ],
@@ -484,58 +610,77 @@ class _SecurityQuestionsPhase extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onPrimary = context.palette.onPrimary;
     if (loading) {
-      return const Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: Colors.white));
+      return Padding(
+          padding: const EdgeInsets.all(24),
+          child: CircularProgressIndicator(color: onPrimary));
     }
     final qs = questions ?? const [];
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Answer your security questions',
-          style: TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w700),
+          style: TextStyle(
+              color: onPrimary, fontSize: 19, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 4),
         Text(
           "Too many wrong PINs -- let's verify it's really you.",
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 13),
+          style:
+              TextStyle(color: onPrimary.withValues(alpha: 0.75), fontSize: 13),
         ),
         const SizedBox(height: 20),
         for (var i = 0; i < qs.length; i++) ...[
-          Text(qs[i], style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w600)),
+          Text(qs[i],
+              style: TextStyle(
+                  color: onPrimary,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
           TextField(
             controller: answerControllers[i],
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: onPrimary),
             decoration: InputDecoration(
               filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.10),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              fillColor: onPrimary.withValues(alpha: 0.10),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none),
               hintText: 'Your answer',
-              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.45)),
+              hintStyle: TextStyle(color: onPrimary.withValues(alpha: 0.45)),
             ),
           ),
           const SizedBox(height: 14),
         ],
         if (error != null) ...[
-          Text(error!, style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 13)),
+          Text(error!,
+              style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 13)),
           const SizedBox(height: 10),
         ],
         SizedBox(
           width: double.infinity,
           child: FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black87),
+            style: FilledButton.styleFrom(
+                backgroundColor: onPrimary, foregroundColor: Colors.black87),
             onPressed: verifying ? null : onSubmit,
             child: verifying
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.4))
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2.4))
                 : const Text('Verify'),
           ),
         ),
         const SizedBox(height: 4),
         TextButton(
           onPressed: onUseEmailInstead,
-          child: Text('Use email instead', style: TextStyle(color: Colors.white.withValues(alpha: 0.72), fontWeight: FontWeight.w600)),
+          child: Text('Use email instead',
+              style: TextStyle(
+                  color: onPrimary.withValues(alpha: 0.72),
+                  fontWeight: FontWeight.w600)),
         ),
       ],
     );
@@ -565,13 +710,15 @@ class _EmailCodePhase extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onPrimary = context.palette.onPrimary;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Reset your PIN by email',
-          style: TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w700),
+          style: TextStyle(
+              color: onPrimary, fontSize: 19, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 4),
         Text(
@@ -580,7 +727,8 @@ class _EmailCodePhase extends StatelessWidget {
               : codeSent
                   ? 'Enter the 6-digit code sent to $email.'
                   : "We'll send a 6-digit code to $email.",
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 13),
+          style:
+              TextStyle(color: onPrimary.withValues(alpha: 0.75), fontSize: 13),
         ),
         const SizedBox(height: 20),
         if (codeSent) ...[
@@ -588,11 +736,17 @@ class _EmailCodePhase extends StatelessWidget {
             controller: codeController,
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontSize: 22, letterSpacing: 6, fontWeight: FontWeight.w700),
+            style: TextStyle(
+                color: onPrimary,
+                fontSize: 22,
+                letterSpacing: 6,
+                fontWeight: FontWeight.w700),
             decoration: InputDecoration(
               filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.10),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              fillColor: onPrimary.withValues(alpha: 0.10),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none),
               counterText: '',
             ),
             maxLength: 6,
@@ -600,20 +754,25 @@ class _EmailCodePhase extends StatelessWidget {
           const SizedBox(height: 14),
         ],
         if (error != null) ...[
-          Text(error!, style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 13)),
+          Text(error!,
+              style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 13)),
           const SizedBox(height: 10),
         ],
         SizedBox(
           width: double.infinity,
           child: FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black87),
+            style: FilledButton.styleFrom(
+                backgroundColor: onPrimary, foregroundColor: Colors.black87),
             onPressed: email == null
                 ? null
                 : (sending || verifying)
                     ? null
                     : (codeSent ? onVerifyCode : onSendCode),
             child: (sending || verifying)
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.4))
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2.4))
                 : Text(codeSent ? 'Verify code' : 'Send code'),
           ),
         ),
@@ -621,7 +780,10 @@ class _EmailCodePhase extends StatelessWidget {
           const SizedBox(height: 4),
           TextButton(
             onPressed: sending ? null : onSendCode,
-            child: Text('Resend code', style: TextStyle(color: Colors.white.withValues(alpha: 0.72), fontWeight: FontWeight.w600)),
+            child: Text('Resend code',
+                style: TextStyle(
+                    color: onPrimary.withValues(alpha: 0.72),
+                    fontWeight: FontWeight.w600)),
           ),
         ],
       ],

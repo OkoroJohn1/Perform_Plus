@@ -84,7 +84,7 @@ class _AdvisorFabState extends State<AdvisorFab> {
           ),
           padding: const EdgeInsets.all(6),
           alignment: Alignment.center,
-          child: const AdvisorMark(size: 28, simplified: true, color: Colors.white),
+          child: AdvisorMark(size: 28, simplified: true, color: palette.onPrimary),
         ),
       ),
     );

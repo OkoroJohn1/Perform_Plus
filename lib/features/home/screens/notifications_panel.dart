@@ -69,6 +69,7 @@ extension _NotificationPresentation on AppNotification {
         AppNotificationType.studyReminder => Icons.schedule,
         AppNotificationType.streakAtRisk => Icons.local_fire_department,
         AppNotificationType.carryoverFlagged => Icons.replay,
+        AppNotificationType.cgpaStandingReminder => Icons.insights_outlined,
       };
 
   Color colorFor(AppPalette palette) => switch (type) {
@@ -79,6 +80,7 @@ extension _NotificationPresentation on AppNotification {
         AppNotificationType.studyReminder => const Color(0xFFEA580C),
         AppNotificationType.streakAtRisk => const Color(0xFFEA580C),
         AppNotificationType.carryoverFlagged => palette.amber,
+        AppNotificationType.cgpaStandingReminder => palette.primary,
       };
 
   /// Where tapping the row routes to — a result notification opens
@@ -86,7 +88,8 @@ extension _NotificationPresentation on AppNotification {
   String get destinationRoute => switch (type) {
         AppNotificationType.resultAdded ||
         AppNotificationType.cgpaChanged ||
-        AppNotificationType.carryoverFlagged =>
+        AppNotificationType.carryoverFlagged ||
+        AppNotificationType.cgpaStandingReminder =>
           Routes.academics,
         AppNotificationType.goalPaceChanged => Routes.home,
         AppNotificationType.achievementUnlocked => Routes.me,

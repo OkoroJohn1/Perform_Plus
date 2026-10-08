@@ -28,6 +28,7 @@ import 'daos/note_dao.dart';
 import 'daos/notification_dao.dart';
 import 'daos/profile_dao.dart';
 import 'daos/semester_dao.dart';
+import 'daos/slip_upload_dao.dart';
 import 'tables/achievements_table.dart';
 import 'tables/calendar_marks_table.dart';
 import 'tables/course_results_table.dart';
@@ -40,6 +41,7 @@ import 'tables/notifications_table.dart';
 import 'tables/profiles_table.dart';
 import 'tables/reading_sessions_table.dart';
 import 'tables/semesters_table.dart';
+import 'tables/slip_uploads_table.dart';
 import 'tables/study_streak_table.dart';
 
 part 'app_database.g.dart';
@@ -59,6 +61,7 @@ part 'app_database.g.dart';
     Notifications,
     LocalSettings,
     CalendarMarks,
+    SlipUploads,
   ],
   daos: [
     ProfileDao,
@@ -71,6 +74,7 @@ part 'app_database.g.dart';
     NotificationDao,
     LocalSettingsDao,
     CalendarMarkDao,
+    SlipUploadDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -81,7 +85,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -133,6 +137,10 @@ class AppDatabase extends _$AppDatabase {
           if (from < 10) {
             await m.addColumn(notes, notes.storagePath);
           }
+          // v10 -> v11: the Result slip wallet on the Results screen.
+          if (from < 11) {
+            await m.createTable(slipUploads);
+          }
         },
       );
 
@@ -166,6 +174,7 @@ class AppDatabase extends _$AppDatabase {
       await (delete(achievements)..where((a) => a.profileId.equals(profileId))).go();
       await (delete(notifications)..where((n) => n.profileId.equals(profileId))).go();
       await (delete(calendarMarks)..where((c) => c.profileId.equals(profileId))).go();
+      await (delete(slipUploads)..where((s) => s.profileId.equals(profileId))).go();
       await (delete(profiles)..where((p) => p.id.equals(profileId))).go();
     });
   }

@@ -18,6 +18,7 @@ enum AppNotificationType {
   studyReminder,
   streakAtRisk,
   carryoverFlagged,
+  cgpaStandingReminder,
 }
 
 class AppNotification {
@@ -140,6 +141,32 @@ String semesterPhrase(GradingScheme scheme, int level, SemesterTerm term) =>
 ({String title, String body}) streakAtRiskContent({required int streak}) => (
       title: 'Your $streak-day streak ends tonight',
       body: 'Read for 10 minutes to keep it.',
+    );
+
+/// Daily reminder nudging the student back to a note they're reading --
+/// see `NotificationsController.maybeGenerateDailyReminder`. Deliberately
+/// doesn't name a page count or time estimate the way [studyReminderContent]
+/// does: that one is driven by the Study tab's own in-memory "Today's
+/// Plan", which this daily-reminder path (triggered from a different
+/// provider tree, no access to that ephemeral state) has no real number
+/// for, and inventing one would violate "never fabricate a number."
+({String title, String body}) studyNudgeContent({required String noteTitle}) => (
+      title: 'Time to read',
+      body: 'Pick up where you left off in $noteTitle.',
+    );
+
+/// Daily reminder stating the student's current CGPA plainly -- not an
+/// event-driven change like [cgpaChangedContent], just today's real,
+/// already-computed standing restated as a nudge.
+({String title, String body}) cgpaStandingReminderContent({
+  required double cgpa,
+  required String? classificationLabel,
+}) =>
+    (
+      title: 'Your CGPA today',
+      body: classificationLabel == null
+          ? 'Your CGPA is ${_fmt(cgpa)}.'
+          : 'Your CGPA is ${_fmt(cgpa)} -- $classificationLabel.',
     );
 
 /// Fires when a semester commit introduces a new carryover (a repeat

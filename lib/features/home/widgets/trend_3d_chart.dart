@@ -14,8 +14,19 @@ import '../../../core/theme/app_theme.dart';
 import '../../../domain/engine/cgpa_engine.dart';
 import '../../../domain/models/course_result.dart';
 import '../../../domain/models/grading_scheme.dart';
+import '../../../shared/widgets/spin_pop_dialog.dart';
+import 'performance_detail_view.dart';
 
-String _fmt(double v) => v.toStringAsFixed(2);
+String fmtGpa(double v) => v.toStringAsFixed(2);
+
+/// Shared by the Dashboard card and its full-screen detail view so the
+/// block colour can never disagree between the two.
+Color colorForGpa(GradingScheme scheme, double gpa) {
+  final band = scheme.classify(gpa);
+  if (band == null) return const Color(0xFF9CA3AF);
+  final index = scheme.bandsDescending.indexWhere((b) => b.label == band.label);
+  return ClassificationPalette.colorForBandIndex(index);
+}
 
 class Trend3DChart extends StatefulWidget {
   final AcademicStanding standing;
@@ -45,13 +56,6 @@ class _Trend3DChartState extends State<Trend3DChart> with SingleTickerProviderSt
     super.dispose();
   }
 
-  Color _colorFor(double gpa) {
-    final band = widget.scheme.classify(gpa);
-    if (band == null) return context.palette.secondaryText;
-    final index = widget.scheme.bandsDescending.indexWhere((b) => b.label == band.label);
-    return ClassificationPalette.colorForBandIndex(index);
-  }
-
   @override
   Widget build(BuildContext context) {
     final semesters = widget.standing.semesters.where((s) => s.creditUnits > 0).toList();
@@ -65,65 +69,76 @@ class _Trend3DChartState extends State<Trend3DChart> with SingleTickerProviderSt
     final shown = semesters.length > 6 ? semesters.sublist(semesters.length - 6) : semesters;
     final maxPoint = widget.scheme.maxPoint;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-      decoration: BoxDecoration(color: context.palette.surface, borderRadius: BorderRadius.circular(20)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Performance View',
-            style: TextStyle(
-              color: context.palette.bodyText,
-              fontSize: 19,
-              fontWeight: FontWeight.w700,
+    return TapToExpand(
+      key: const ValueKey('performanceViewExpandTap'),
+      onTap: () => showPerformanceDetail(context, standing: widget.standing, scheme: widget.scheme),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+        decoration: BoxDecoration(color: context.palette.surface, borderRadius: BorderRadius.circular(20)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Performance View',
+                    style: TextStyle(
+                      color: context.palette.bodyText,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Icon(Icons.open_in_full, size: 16, color: context.palette.hintText),
+              ],
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'Each semester\'s GPA, block by block',
-            style: TextStyle(color: context.palette.secondaryText, fontSize: 13),
-          ),
-          const SizedBox(height: 18),
-          AnimatedBuilder(
-            animation: _grow,
-            builder: (context, _) => SizedBox(
-              height: 160,
-              child: CustomPaint(
-                size: Size.infinite,
-                painter: _Bars3DPainter(
-                  semesters: shown,
-                  maxPoint: maxPoint,
-                  colorFor: _colorFor,
-                  grow: _grow.value,
-                  labelColor: context.palette.bodyText,
+            const SizedBox(height: 2),
+            Text(
+              'Each semester\'s GPA, block by block',
+              style: TextStyle(color: context.palette.secondaryText, fontSize: 13),
+            ),
+            const SizedBox(height: 18),
+            AnimatedBuilder(
+              animation: _grow,
+              builder: (context, _) => SizedBox(
+                height: 160,
+                child: CustomPaint(
+                  size: Size.infinite,
+                  painter: Bars3DPainter(
+                    semesters: shown,
+                    maxPoint: maxPoint,
+                    colorFor: (gpa) => colorForGpa(widget.scheme, gpa),
+                    grow: _grow.value,
+                    labelColor: context.palette.bodyText,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              for (final s in shown)
-                Expanded(
-                  child: Text(
-                    '${s.level}L·${s.term.shortLabel}',
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: context.palette.secondaryText, fontSize: 11),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                for (final s in shown)
+                  Expanded(
+                    child: Text(
+                      '${s.level}L·${s.term.shortLabel}',
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: context.palette.secondaryText, fontSize: 11),
+                    ),
                   ),
-                ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _Bars3DPainter extends CustomPainter {
+class Bars3DPainter extends CustomPainter {
   final List<SemesterComputation> semesters;
   final double maxPoint;
   final Color Function(double gpa) colorFor;
@@ -133,7 +148,7 @@ class _Bars3DPainter extends CustomPainter {
   static const _depth = 9.0;
   static const _labelSpace = 22.0;
 
-  _Bars3DPainter({
+  Bars3DPainter({
     required this.semesters,
     required this.maxPoint,
     required this.colorFor,
@@ -199,7 +214,7 @@ class _Bars3DPainter extends CustomPainter {
       final textPainter = TextPainter(
         textDirection: TextDirection.ltr,
         text: TextSpan(
-          text: _fmt(comp.gpa),
+          text: fmtGpa(comp.gpa),
           style: TextStyle(
             color: labelColor.withValues(alpha: grow),
             fontSize: 11.5,
@@ -215,7 +230,7 @@ class _Bars3DPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _Bars3DPainter oldDelegate) =>
+  bool shouldRepaint(covariant Bars3DPainter oldDelegate) =>
       oldDelegate.grow != grow ||
       oldDelegate.semesters != semesters ||
       oldDelegate.labelColor != labelColor;

@@ -5597,6 +5597,368 @@ class CalendarMarksCompanion extends UpdateCompanion<CalendarMarkRow> {
   }
 }
 
+class $SlipUploadsTable extends SlipUploads
+    with TableInfo<$SlipUploadsTable, SlipUploadRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SlipUploadsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _profileIdMeta =
+      const VerificationMeta('profileId');
+  @override
+  late final GeneratedColumn<String> profileId = GeneratedColumn<String>(
+      'profile_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+      'kind', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _filePathMeta =
+      const VerificationMeta('filePath');
+  @override
+  late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
+      'file_path', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _extractedCourseCountMeta =
+      const VerificationMeta('extractedCourseCount');
+  @override
+  late final GeneratedColumn<int> extractedCourseCount = GeneratedColumn<int>(
+      'extracted_course_count', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _capturedAtMeta =
+      const VerificationMeta('capturedAt');
+  @override
+  late final GeneratedColumn<DateTime> capturedAt = GeneratedColumn<DateTime>(
+      'captured_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, profileId, kind, filePath, extractedCourseCount, capturedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'slip_uploads';
+  @override
+  VerificationContext validateIntegrity(Insertable<SlipUploadRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(_profileIdMeta,
+          profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta));
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+          _kindMeta, kind.isAcceptableOrUnknown(data['kind']!, _kindMeta));
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('file_path')) {
+      context.handle(_filePathMeta,
+          filePath.isAcceptableOrUnknown(data['file_path']!, _filePathMeta));
+    } else if (isInserting) {
+      context.missing(_filePathMeta);
+    }
+    if (data.containsKey('extracted_course_count')) {
+      context.handle(
+          _extractedCourseCountMeta,
+          extractedCourseCount.isAcceptableOrUnknown(
+              data['extracted_course_count']!, _extractedCourseCountMeta));
+    }
+    if (data.containsKey('captured_at')) {
+      context.handle(
+          _capturedAtMeta,
+          capturedAt.isAcceptableOrUnknown(
+              data['captured_at']!, _capturedAtMeta));
+    } else if (isInserting) {
+      context.missing(_capturedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SlipUploadRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SlipUploadRow(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      profileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}profile_id'])!,
+      kind: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}kind'])!,
+      filePath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}file_path'])!,
+      extractedCourseCount: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}extracted_course_count']),
+      capturedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}captured_at'])!,
+    );
+  }
+
+  @override
+  $SlipUploadsTable createAlias(String alias) {
+    return $SlipUploadsTable(attachedDatabase, alias);
+  }
+}
+
+class SlipUploadRow extends DataClass implements Insertable<SlipUploadRow> {
+  final String id;
+  final String profileId;
+
+  /// Stored as text (`SlipKind.name`) rather than an int index -- same
+  /// reasoning as `NoteCategory`'s `textEnum` elsewhere: a reordered enum
+  /// can never silently relabel an old row.
+  final String kind;
+  final String filePath;
+  final int? extractedCourseCount;
+  final DateTime capturedAt;
+  const SlipUploadRow(
+      {required this.id,
+      required this.profileId,
+      required this.kind,
+      required this.filePath,
+      this.extractedCourseCount,
+      required this.capturedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['profile_id'] = Variable<String>(profileId);
+    map['kind'] = Variable<String>(kind);
+    map['file_path'] = Variable<String>(filePath);
+    if (!nullToAbsent || extractedCourseCount != null) {
+      map['extracted_course_count'] = Variable<int>(extractedCourseCount);
+    }
+    map['captured_at'] = Variable<DateTime>(capturedAt);
+    return map;
+  }
+
+  SlipUploadsCompanion toCompanion(bool nullToAbsent) {
+    return SlipUploadsCompanion(
+      id: Value(id),
+      profileId: Value(profileId),
+      kind: Value(kind),
+      filePath: Value(filePath),
+      extractedCourseCount: extractedCourseCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(extractedCourseCount),
+      capturedAt: Value(capturedAt),
+    );
+  }
+
+  factory SlipUploadRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SlipUploadRow(
+      id: serializer.fromJson<String>(json['id']),
+      profileId: serializer.fromJson<String>(json['profileId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      filePath: serializer.fromJson<String>(json['filePath']),
+      extractedCourseCount:
+          serializer.fromJson<int?>(json['extractedCourseCount']),
+      capturedAt: serializer.fromJson<DateTime>(json['capturedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'profileId': serializer.toJson<String>(profileId),
+      'kind': serializer.toJson<String>(kind),
+      'filePath': serializer.toJson<String>(filePath),
+      'extractedCourseCount': serializer.toJson<int?>(extractedCourseCount),
+      'capturedAt': serializer.toJson<DateTime>(capturedAt),
+    };
+  }
+
+  SlipUploadRow copyWith(
+          {String? id,
+          String? profileId,
+          String? kind,
+          String? filePath,
+          Value<int?> extractedCourseCount = const Value.absent(),
+          DateTime? capturedAt}) =>
+      SlipUploadRow(
+        id: id ?? this.id,
+        profileId: profileId ?? this.profileId,
+        kind: kind ?? this.kind,
+        filePath: filePath ?? this.filePath,
+        extractedCourseCount: extractedCourseCount.present
+            ? extractedCourseCount.value
+            : this.extractedCourseCount,
+        capturedAt: capturedAt ?? this.capturedAt,
+      );
+  SlipUploadRow copyWithCompanion(SlipUploadsCompanion data) {
+    return SlipUploadRow(
+      id: data.id.present ? data.id.value : this.id,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      filePath: data.filePath.present ? data.filePath.value : this.filePath,
+      extractedCourseCount: data.extractedCourseCount.present
+          ? data.extractedCourseCount.value
+          : this.extractedCourseCount,
+      capturedAt:
+          data.capturedAt.present ? data.capturedAt.value : this.capturedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SlipUploadRow(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('kind: $kind, ')
+          ..write('filePath: $filePath, ')
+          ..write('extractedCourseCount: $extractedCourseCount, ')
+          ..write('capturedAt: $capturedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id, profileId, kind, filePath, extractedCourseCount, capturedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SlipUploadRow &&
+          other.id == this.id &&
+          other.profileId == this.profileId &&
+          other.kind == this.kind &&
+          other.filePath == this.filePath &&
+          other.extractedCourseCount == this.extractedCourseCount &&
+          other.capturedAt == this.capturedAt);
+}
+
+class SlipUploadsCompanion extends UpdateCompanion<SlipUploadRow> {
+  final Value<String> id;
+  final Value<String> profileId;
+  final Value<String> kind;
+  final Value<String> filePath;
+  final Value<int?> extractedCourseCount;
+  final Value<DateTime> capturedAt;
+  final Value<int> rowid;
+  const SlipUploadsCompanion({
+    this.id = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.filePath = const Value.absent(),
+    this.extractedCourseCount = const Value.absent(),
+    this.capturedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SlipUploadsCompanion.insert({
+    required String id,
+    required String profileId,
+    required String kind,
+    required String filePath,
+    this.extractedCourseCount = const Value.absent(),
+    required DateTime capturedAt,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        profileId = Value(profileId),
+        kind = Value(kind),
+        filePath = Value(filePath),
+        capturedAt = Value(capturedAt);
+  static Insertable<SlipUploadRow> custom({
+    Expression<String>? id,
+    Expression<String>? profileId,
+    Expression<String>? kind,
+    Expression<String>? filePath,
+    Expression<int>? extractedCourseCount,
+    Expression<DateTime>? capturedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (profileId != null) 'profile_id': profileId,
+      if (kind != null) 'kind': kind,
+      if (filePath != null) 'file_path': filePath,
+      if (extractedCourseCount != null)
+        'extracted_course_count': extractedCourseCount,
+      if (capturedAt != null) 'captured_at': capturedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SlipUploadsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? profileId,
+      Value<String>? kind,
+      Value<String>? filePath,
+      Value<int?>? extractedCourseCount,
+      Value<DateTime>? capturedAt,
+      Value<int>? rowid}) {
+    return SlipUploadsCompanion(
+      id: id ?? this.id,
+      profileId: profileId ?? this.profileId,
+      kind: kind ?? this.kind,
+      filePath: filePath ?? this.filePath,
+      extractedCourseCount: extractedCourseCount ?? this.extractedCourseCount,
+      capturedAt: capturedAt ?? this.capturedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<String>(profileId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (filePath.present) {
+      map['file_path'] = Variable<String>(filePath.value);
+    }
+    if (extractedCourseCount.present) {
+      map['extracted_course_count'] = Variable<int>(extractedCourseCount.value);
+    }
+    if (capturedAt.present) {
+      map['captured_at'] = Variable<DateTime>(capturedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SlipUploadsCompanion(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('kind: $kind, ')
+          ..write('filePath: $filePath, ')
+          ..write('extractedCourseCount: $extractedCourseCount, ')
+          ..write('capturedAt: $capturedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5614,6 +5976,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $NotificationsTable notifications = $NotificationsTable(this);
   late final $LocalSettingsTable localSettings = $LocalSettingsTable(this);
   late final $CalendarMarksTable calendarMarks = $CalendarMarksTable(this);
+  late final $SlipUploadsTable slipUploads = $SlipUploadsTable(this);
   late final ProfileDao profileDao = ProfileDao(this as AppDatabase);
   late final SemesterDao semesterDao = SemesterDao(this as AppDatabase);
   late final CourseResultDao courseResultDao =
@@ -5630,6 +5993,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       LocalSettingsDao(this as AppDatabase);
   late final CalendarMarkDao calendarMarkDao =
       CalendarMarkDao(this as AppDatabase);
+  late final SlipUploadDao slipUploadDao = SlipUploadDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5647,7 +6011,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         achievements,
         notifications,
         localSettings,
-        calendarMarks
+        calendarMarks,
+        slipUploads
       ];
 }
 
@@ -8442,6 +8807,196 @@ typedef $$CalendarMarksTableProcessedTableManager = ProcessedTableManager<
     ),
     CalendarMarkRow,
     PrefetchHooks Function()>;
+typedef $$SlipUploadsTableCreateCompanionBuilder = SlipUploadsCompanion
+    Function({
+  required String id,
+  required String profileId,
+  required String kind,
+  required String filePath,
+  Value<int?> extractedCourseCount,
+  required DateTime capturedAt,
+  Value<int> rowid,
+});
+typedef $$SlipUploadsTableUpdateCompanionBuilder = SlipUploadsCompanion
+    Function({
+  Value<String> id,
+  Value<String> profileId,
+  Value<String> kind,
+  Value<String> filePath,
+  Value<int?> extractedCourseCount,
+  Value<DateTime> capturedAt,
+  Value<int> rowid,
+});
+
+class $$SlipUploadsTableFilterComposer
+    extends Composer<_$AppDatabase, $SlipUploadsTable> {
+  $$SlipUploadsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get profileId => $composableBuilder(
+      column: $table.profileId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get kind => $composableBuilder(
+      column: $table.kind, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get filePath => $composableBuilder(
+      column: $table.filePath, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get extractedCourseCount => $composableBuilder(
+      column: $table.extractedCourseCount,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get capturedAt => $composableBuilder(
+      column: $table.capturedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$SlipUploadsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SlipUploadsTable> {
+  $$SlipUploadsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get profileId => $composableBuilder(
+      column: $table.profileId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+      column: $table.kind, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get filePath => $composableBuilder(
+      column: $table.filePath, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get extractedCourseCount => $composableBuilder(
+      column: $table.extractedCourseCount,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get capturedAt => $composableBuilder(
+      column: $table.capturedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SlipUploadsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SlipUploadsTable> {
+  $$SlipUploadsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get profileId =>
+      $composableBuilder(column: $table.profileId, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get filePath =>
+      $composableBuilder(column: $table.filePath, builder: (column) => column);
+
+  GeneratedColumn<int> get extractedCourseCount => $composableBuilder(
+      column: $table.extractedCourseCount, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get capturedAt => $composableBuilder(
+      column: $table.capturedAt, builder: (column) => column);
+}
+
+class $$SlipUploadsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SlipUploadsTable,
+    SlipUploadRow,
+    $$SlipUploadsTableFilterComposer,
+    $$SlipUploadsTableOrderingComposer,
+    $$SlipUploadsTableAnnotationComposer,
+    $$SlipUploadsTableCreateCompanionBuilder,
+    $$SlipUploadsTableUpdateCompanionBuilder,
+    (
+      SlipUploadRow,
+      BaseReferences<_$AppDatabase, $SlipUploadsTable, SlipUploadRow>
+    ),
+    SlipUploadRow,
+    PrefetchHooks Function()> {
+  $$SlipUploadsTableTableManager(_$AppDatabase db, $SlipUploadsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SlipUploadsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SlipUploadsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SlipUploadsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> profileId = const Value.absent(),
+            Value<String> kind = const Value.absent(),
+            Value<String> filePath = const Value.absent(),
+            Value<int?> extractedCourseCount = const Value.absent(),
+            Value<DateTime> capturedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SlipUploadsCompanion(
+            id: id,
+            profileId: profileId,
+            kind: kind,
+            filePath: filePath,
+            extractedCourseCount: extractedCourseCount,
+            capturedAt: capturedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String profileId,
+            required String kind,
+            required String filePath,
+            Value<int?> extractedCourseCount = const Value.absent(),
+            required DateTime capturedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SlipUploadsCompanion.insert(
+            id: id,
+            profileId: profileId,
+            kind: kind,
+            filePath: filePath,
+            extractedCourseCount: extractedCourseCount,
+            capturedAt: capturedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SlipUploadsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SlipUploadsTable,
+    SlipUploadRow,
+    $$SlipUploadsTableFilterComposer,
+    $$SlipUploadsTableOrderingComposer,
+    $$SlipUploadsTableAnnotationComposer,
+    $$SlipUploadsTableCreateCompanionBuilder,
+    $$SlipUploadsTableUpdateCompanionBuilder,
+    (
+      SlipUploadRow,
+      BaseReferences<_$AppDatabase, $SlipUploadsTable, SlipUploadRow>
+    ),
+    SlipUploadRow,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -8472,4 +9027,6 @@ class $AppDatabaseManager {
       $$LocalSettingsTableTableManager(_db, _db.localSettings);
   $$CalendarMarksTableTableManager get calendarMarks =>
       $$CalendarMarksTableTableManager(_db, _db.calendarMarks);
+  $$SlipUploadsTableTableManager get slipUploads =>
+      $$SlipUploadsTableTableManager(_db, _db.slipUploads);
 }

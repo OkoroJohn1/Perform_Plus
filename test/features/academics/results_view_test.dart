@@ -1,7 +1,10 @@
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:perform_plus/data/local/app_database.dart';
 import 'package:perform_plus/data/repositories/academic_record_provider.dart';
+import 'package:perform_plus/data/repositories/repository_providers.dart';
 import 'package:perform_plus/data/seed/nigerian_institutions.dart';
 import 'package:perform_plus/domain/models/course_result.dart';
 import 'package:perform_plus/features/academics/screens/results_view.dart';
@@ -30,6 +33,11 @@ Semester _s(String id, int level, SemesterTerm term, List<CourseResult> r) => Se
       updatedAt: _now,
     );
 
+// The Results screen's new Result slip wallet card reads a Drift-backed
+// provider -- `appDatabaseProvider` must be overridden with an in-memory
+// instance or the real constructor hits `path_provider`'s platform channel
+// and throws, same as every other Drift-touching widget test here (see
+// `repository_providers.dart`'s doc comment).
 Widget _app(List<Semester> semesters) => ProviderScope(
       overrides: [
         academicRecordProvider.overrideWith(
@@ -37,6 +45,7 @@ Widget _app(List<Semester> semesters) => ProviderScope(
             AcademicRecord(semesters: semesters, scheme: _scheme),
           ),
         ),
+        appDatabaseProvider.overrideWithValue(AppDatabase.forTesting(NativeDatabase.memory())),
       ],
       child: const MaterialApp(home: Scaffold(body: ResultsView())),
     );
@@ -155,7 +164,14 @@ void main() {
     expect(find.text('Recent trend'), findsNothing);
     expect(find.byIcon(Icons.arrow_upward), findsNothing);
     expect(find.byIcon(Icons.arrow_downward), findsNothing);
-    // The rest of the record still renders normally.
+    // The rest of the record still renders normally -- below the fold now
+    // that the Result slip wallet card sits above it, so it needs a scroll
+    // into view first, same as the "Grade Breakdown" assertion below.
+    await tester.scrollUntilVisible(
+      find.text('Best semester'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Best semester'), findsOneWidget);
   });
 

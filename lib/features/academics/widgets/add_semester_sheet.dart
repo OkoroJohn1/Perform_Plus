@@ -20,6 +20,10 @@
 /// `CourseResult.needsReview`.
 library;
 
+import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,8 +33,10 @@ import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_palette.dart';
 import '../../../data/repositories/academic_record_provider.dart';
+import '../../../data/repositories/slip_wallet_provider.dart';
 import '../../../domain/models/course_result.dart';
 import '../../../domain/models/grading_scheme.dart';
+import '../../../domain/models/slip_upload.dart';
 import '../services/course_slip_extraction_service.dart';
 import '../services/result_slip_ocr_service.dart';
 
@@ -273,6 +279,7 @@ class _AddSemesterSheetState extends ConsumerState<AddSemesterSheet> {
       _scanError = null;
     });
 
+    Uint8List? processed;
     try {
       final bytes = await pickRegistrationSlipBytes(source);
       if (bytes == null) {
@@ -286,9 +293,20 @@ class _AddSemesterSheetState extends ConsumerState<AddSemesterSheet> {
         );
       }
 
-      final processed = processRegistrationSlip(bytes);
+      processed = processRegistrationSlip(bytes);
       final extracted = await extractCoursesFromSlip(processed);
       if (!mounted) return;
+
+      // Kept in the Result slip wallet (Results screen) regardless of
+      // extraction's outcome below -- "I uploaded this" doesn't require
+      // "and it worked." See the catch branches for the failure case.
+      unawaited(
+        ref.read(slipWalletProvider.notifier).add(
+              bytes: processed,
+              kind: SlipKind.registration,
+              extractedCourseCount: extracted.length,
+            ),
+      );
 
       setState(() {
         final draftRows = extracted.map(_DraftRow.fromExtracted).toList();
@@ -299,6 +317,9 @@ class _AddSemesterSheetState extends ConsumerState<AddSemesterSheet> {
         _scanning = false;
       });
     } on SlipExtractionException catch (e) {
+      if (processed != null) {
+        unawaited(ref.read(slipWalletProvider.notifier).add(bytes: processed, kind: SlipKind.registration));
+      }
       if (!mounted) return;
       setState(() {
         _scanning = false;
@@ -311,6 +332,9 @@ class _AddSemesterSheetState extends ConsumerState<AddSemesterSheet> {
         _scanError = "That doesn't look like a readable image. Try a different photo.";
       });
     } catch (_) {
+      if (processed != null) {
+        unawaited(ref.read(slipWalletProvider.notifier).add(bytes: processed, kind: SlipKind.registration));
+      }
       if (!mounted) return;
       setState(() {
         _scanning = false;
@@ -356,8 +380,9 @@ class _AddSemesterSheetState extends ConsumerState<AddSemesterSheet> {
       _scanError = null;
     });
 
+    String? path;
     try {
-      final path = await pickResultSlipImagePath(source);
+      path = await pickResultSlipImagePath(source);
       if (path == null) {
         if (mounted) setState(() => _scanning = false);
         return;
@@ -365,6 +390,10 @@ class _AddSemesterSheetState extends ConsumerState<AddSemesterSheet> {
 
       final extracted = await extractResultsFromImage(path);
       if (!mounted) return;
+
+      // Kept in the Result slip wallet regardless of outcome -- see the
+      // matching comment in `_scanSlip` above.
+      unawaited(_saveResultSlipToWallet(path, extractedCourseCount: extracted.length));
 
       if (extracted.isEmpty) {
         setState(() {
@@ -382,17 +411,33 @@ class _AddSemesterSheetState extends ConsumerState<AddSemesterSheet> {
         _scanning = false;
       });
     } on ResultSlipOcrException catch (e) {
+      if (path != null) unawaited(_saveResultSlipToWallet(path, extractedCourseCount: null));
       if (!mounted) return;
       setState(() {
         _scanning = false;
         _scanError = e.message;
       });
     } catch (_) {
+      if (path != null) unawaited(_saveResultSlipToWallet(path, extractedCourseCount: null));
       if (!mounted) return;
       setState(() {
         _scanning = false;
         _scanError = 'Something went wrong reading that slip. Try again or enter courses manually.';
       });
+    }
+  }
+
+  Future<void> _saveResultSlipToWallet(String pickedPath, {int? extractedCourseCount}) async {
+    try {
+      final bytes = await File(pickedPath).readAsBytes();
+      await ref.read(slipWalletProvider.notifier).add(
+            bytes: bytes,
+            kind: SlipKind.result,
+            extractedCourseCount: extractedCourseCount,
+          );
+    } catch (_) {
+      // Best-effort -- the picker's temp file can vanish before this runs;
+      // losing the wallet copy is not worth surfacing over a successful scan.
     }
   }
 

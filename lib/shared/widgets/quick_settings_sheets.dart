@@ -147,9 +147,22 @@ class _AccentSwatch extends StatelessWidget {
               decoration: BoxDecoration(
                 color: accent.primary,
                 shape: BoxShape.circle,
-                border: selected ? Border.all(color: context.palette.bodyText, width: 2.5) : null,
+                // A White swatch on this sheet's own light/white surface
+                // would otherwise be a literal invisible circle -- every
+                // swatch gets a faint outline so White stays visible and
+                // tappable, and the selected ring (bodyText, thicker) still
+                // reads clearly on top of it.
+                border: Border.all(
+                  color: selected ? context.palette.bodyText : context.palette.divider,
+                  width: selected ? 2.5 : 1,
+                ),
               ),
-              child: selected ? const Icon(Icons.check, color: Colors.white) : null,
+              child: selected
+                  ? Icon(
+                      Icons.check,
+                      color: accent.primary.computeLuminance() > 0.6 ? Colors.black87 : Colors.white,
+                    )
+                  : null,
             ),
             const SizedBox(height: 6),
             Text(accent.label, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),

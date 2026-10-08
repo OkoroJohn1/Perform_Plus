@@ -19,6 +19,7 @@ import '../../../domain/engine/cgpa_engine.dart';
 import '../../../domain/engine/projection_solver.dart';
 import '../../../domain/models/course_result.dart';
 import '../../../domain/models/grading_scheme.dart';
+import '../../../shared/widgets/spin_pop_dialog.dart';
 import 'trend_detail_view.dart';
 
 String _fmt(double v) => v.toStringAsFixed(2);
@@ -96,9 +97,8 @@ class TrendCard extends StatelessWidget {
           // nothing a full-screen view would add.
           !hasTrend
               ? const TrendPlaceholder()
-              : InkWell(
+              : TapToExpand(
                   key: const ValueKey('trendChartExpandTap'),
-                  borderRadius: BorderRadius.circular(12),
                   onTap: () => showTrendDetail(
                     context,
                     standing: standing,

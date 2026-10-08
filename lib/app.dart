@@ -6,7 +6,10 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_accent_provider.dart';
 import 'core/theme/theme_mode_provider.dart';
+import 'data/repositories/academic_record_provider.dart';
 import 'data/repositories/achievement_provider.dart';
+import 'data/repositories/note_provider.dart';
+import 'data/repositories/notification_provider.dart';
 import 'features/auth/providers/pin_provider.dart';
 import 'features/auth/screens/pin_lock_screen.dart';
 
@@ -46,6 +49,14 @@ class _PerformPlusAppState extends ConsumerState<PerformPlusApp> with WidgetsBin
       // which cost `profile_setup_screen.dart`'s in-flight photo pick its
       // result the instant the student returned.
       ref.read(pinProvider.notifier).handleResume();
+      // Covers a student who resumes into a tab other than Home for the
+      // rest of the day -- `dashboard_screen.dart`'s own check only fires
+      // when that screen actually mounts. See
+      // `NotificationsController.maybeGenerateDailyReminder`'s doc comment.
+      ref.read(notificationsProvider.notifier).maybeGenerateDailyReminder(
+            standing: ref.read(standingProvider),
+            notes: ref.read(notesProvider).notes,
+          );
     } else if (state == AppLifecycleState.paused) {
       ref.read(pinProvider.notifier).handlePause();
     }

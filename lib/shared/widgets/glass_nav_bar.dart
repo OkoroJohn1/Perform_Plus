@@ -185,6 +185,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onPrimary = context.palette.onPrimary;
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -199,20 +200,20 @@ class _NavItem extends StatelessWidget {
                 curve: Curves.easeOut,
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
                 decoration: BoxDecoration(
-                  color: selected ? Colors.white.withValues(alpha: 0.26) : Colors.transparent,
+                  color: selected ? onPrimary.withValues(alpha: 0.26) : Colors.transparent,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Icon(
                   selected ? item.filled : item.outline,
                   size: 23,
-                  color: Colors.white.withValues(alpha: selected ? 1.0 : 0.72),
+                  color: onPrimary.withValues(alpha: selected ? 1.0 : 0.72),
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 item.label,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: selected ? 1.0 : 0.72),
+                  color: onPrimary.withValues(alpha: selected ? 1.0 : 0.72),
                   fontSize: 11.5,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   shadows: const [Shadow(color: Colors.black26, blurRadius: 4)],

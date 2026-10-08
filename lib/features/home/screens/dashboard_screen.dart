@@ -15,6 +15,7 @@
 /// its own nested `Scaffold` so it can also own a drawer.
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -27,6 +28,7 @@ import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/repositories/academic_record_provider.dart';
 import '../../../data/repositories/goal_provider.dart';
+import '../../../data/repositories/note_provider.dart';
 import '../../../data/repositories/notification_provider.dart';
 import '../../../domain/engine/cgpa_engine.dart';
 import '../../../shared/widgets/app_drawer.dart';
@@ -37,6 +39,7 @@ import '../../auth/providers/security_questions_provider.dart';
 import '../../auth/screens/pin_prompt_dialog.dart';
 import '../../auth/screens/security_questions_prompt_dialog.dart';
 import '../../academics/widgets/add_semester_sheet.dart';
+import '../providers/notification_prompt_provider.dart';
 import '../widgets/cgpa_card.dart';
 import '../widgets/course_strength_card.dart';
 import '../widgets/credit_load_split_card.dart';
@@ -47,6 +50,7 @@ import '../widgets/semester_comparison_card.dart';
 import '../widgets/trend_3d_chart.dart';
 import '../widgets/trend_chart.dart';
 import '../../../shared/widgets/gradient_button.dart';
+import 'notification_prompt_dialog.dart';
 import 'notifications_panel.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -59,6 +63,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _pinPromptQueued = false;
   bool _securityQuestionsPromptQueued = false;
+  bool _notificationPromptQueued = false;
 
   void _maybeQueuePinPrompt(PinState pinState) {
     if (_pinPromptQueued || !pinState.loaded || pinState.isSet || pinState.promptDismissed) {
@@ -88,6 +93,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
   }
 
+  /// Shown once a student has real data worth being reminded about --
+  /// same "wait until there's something to protect/nudge about" gate as
+  /// the PIN prompt above, not shown on a day-one empty dashboard.
+  void _maybeQueueNotificationPrompt(bool hasData, NotificationPromptState promptState) {
+    if (_notificationPromptQueued || !hasData || !promptState.loaded || promptState.dismissed) {
+      return;
+    }
+    _notificationPromptQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) showNotificationPromptDialog(context, ref);
+    });
+  }
+
+  bool _dailyReminderCheckedThisSession = false;
+
+  /// Runs once per Dashboard mount (app.dart's resume handler covers the
+  /// rest of the day via the same method) -- see
+  /// `NotificationsController.maybeGenerateDailyReminder`'s doc comment
+  /// for why "daily" means "next time the app is opened/resumed," not a
+  /// literal background alarm.
+  void _maybeCheckDailyReminder(AcademicStanding standing) {
+    if (_dailyReminderCheckedThisSession) return;
+    _dailyReminderCheckedThisSession = true;
+    final notes = ref.read(notesProvider).notes;
+    unawaited(
+      ref.read(notificationsProvider.notifier).maybeGenerateDailyReminder(standing: standing, notes: notes),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final standing = ref.watch(standingProvider);
@@ -95,6 +129,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final pinState = ref.watch(pinProvider);
     _maybeQueuePinPrompt(pinState);
     _maybeQueueSecurityQuestionsPrompt(pinState, ref.watch(securityQuestionsProvider));
+    _maybeQueueNotificationPrompt(standing.hasData, ref.watch(notificationPromptProvider));
+    _maybeCheckDailyReminder(standing);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
