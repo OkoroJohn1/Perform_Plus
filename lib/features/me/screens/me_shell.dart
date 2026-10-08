@@ -1201,6 +1201,11 @@ const _repeatPolicyLabel = <RepeatPolicy, String>{
   RepeatPolicy.replaceWithCap: 'Your retake replaces the original, capped at a maximum',
 };
 
+const _aggregationLabel = <CgpaAggregationMode, String>{
+  CgpaAggregationMode.creditWeighted: 'Standard (credit-unit weighted)',
+  CgpaAggregationMode.recursiveSemesterAverage: 'Running average (CGPA + new GPA) ÷ 2',
+};
+
 class _GradingSchemeSheet extends StatefulWidget {
   final WidgetRef ref;
 
@@ -1213,6 +1218,7 @@ class _GradingSchemeSheet extends StatefulWidget {
 class _GradingSchemeSheetState extends State<_GradingSchemeSheet> {
   late RepeatPolicy _policy;
   late double _capPoint;
+  late CgpaAggregationMode _aggregation;
 
   GradingScheme get _originalScheme => widget.ref.read(academicRecordProvider).scheme;
 
@@ -1221,17 +1227,20 @@ class _GradingSchemeSheetState extends State<_GradingSchemeSheet> {
     super.initState();
     _policy = _originalScheme.repeatPolicy;
     _capPoint = _originalScheme.repeatCapPoint ?? 3.0;
+    _aggregation = _originalScheme.cgpaAggregation;
   }
 
   bool get _dirty =>
       _policy != _originalScheme.repeatPolicy ||
-      (_policy == RepeatPolicy.replaceWithCap && _capPoint != (_originalScheme.repeatCapPoint ?? 3.0));
+      (_policy == RepeatPolicy.replaceWithCap && _capPoint != (_originalScheme.repeatCapPoint ?? 3.0)) ||
+      _aggregation != _originalScheme.cgpaAggregation;
 
   void _save() {
     final scheme = _originalScheme;
     final newScheme = scheme.copyWith(
       repeatPolicy: _policy,
       repeatCapPoint: _policy == RepeatPolicy.replaceWithCap ? _capPoint : scheme.repeatCapPoint,
+      cgpaAggregation: _aggregation,
     );
     final record = widget.ref.read(academicRecordProvider);
     final previous = CgpaEngine.computeStanding(semesters: record.semesters, scheme: scheme);
@@ -1244,9 +1253,9 @@ class _GradingSchemeSheetState extends State<_GradingSchemeSheet> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Change repeat policy?'),
+        title: const Text('Change grading policy?'),
         content: Text(
-          'This changes how repeated courses count. Your CGPA will be recalculated.\n\n'
+          'This changes how your results combine into a CGPA. It will be recalculated.\n\n'
           'CGPA: ${_fmt(result.previous.cgpa)} → ${_fmt(result.updated.cgpa)}',
         ),
         actions: [
@@ -1336,6 +1345,39 @@ class _GradingSchemeSheetState extends State<_GradingSchemeSheet> {
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(labelText: 'Cap point'),
                   onChanged: (v) => setState(() => _capPoint = double.tryParse(v) ?? _capPoint),
+                ),
+              ],
+              const SizedBox(height: 20),
+              const Text('CGPA calculation method', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              Text(
+                'The standard method is credit-unit weighted and matches an actual transcript. '
+                'Only switch this if your institution has specifically confirmed otherwise.',
+                style: TextStyle(color: context.palette.secondaryText, fontSize: 12.5),
+              ),
+              for (final mode in CgpaAggregationMode.values)
+                RadioListTile<CgpaAggregationMode>(
+                  key: ValueKey('cgpaAggregation_${mode.name}'),
+                  contentPadding: EdgeInsets.zero,
+                  value: mode,
+                  groupValue: _aggregation,
+                  title: Text(_aggregationLabel[mode]!, style: const TextStyle(fontSize: 14.5)),
+                  onChanged: (v) => setState(() => _aggregation = v!),
+                ),
+              if (_aggregation == CgpaAggregationMode.recursiveSemesterAverage) ...[
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: context.palette.amber.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Under this method, your CGPA after each semester is a straight average of your '
+                    "previous CGPA and that semester's GPA -- it ignores credit units entirely, so it "
+                    'can resolve the same results to a different classification than the standard '
+                    'method. You can switch back to Standard here at any time.',
+                    style: TextStyle(color: context.palette.amber, fontSize: 12.5),
+                  ),
                 ),
               ],
               const SizedBox(height: 20),

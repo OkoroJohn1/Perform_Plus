@@ -26,6 +26,8 @@ class GradingSchemes extends Table {
       text().map(const ClassificationBandListConverter())();
   TextColumn get repeatPolicy => textEnum<RepeatPolicy>()();
   RealColumn get repeatCapPoint => real().nullable()();
+  TextColumn get cgpaAggregation => textEnum<CgpaAggregationMode>()
+      .withDefault(Constant(CgpaAggregationMode.creditWeighted.name))();
   BoolColumn get isCustom => boolean().withDefault(const Constant(false))();
   BoolColumn get isVerified => boolean().withDefault(const Constant(true))();
   TextColumn get firstTermLabel =>

@@ -30,6 +30,37 @@ enum RepeatPolicy {
   replaceWithCap,
 }
 
+/// How a student's semester-by-semester GPAs combine into a single
+/// cumulative CGPA. This is a genuinely separate concern from the other
+/// four (score->letter, letter->point, classification bands, repeat
+/// policy) — same institution-specific-and-must-never-be-guessed status,
+/// which is why it lives on [GradingScheme] rather than as an app-wide
+/// setting: a student transferring between institutions, or an institution
+/// whose policy was mis-recorded, must be able to tell the two apart.
+enum CgpaAggregationMode {
+  /// The standard definition printed on an actual transcript: cumulative
+  /// CGPA is the credit-unit-weighted average of quality points across
+  /// EVERY semester on record — `total quality points / total credit
+  /// units`, recomputed from scratch each time, never a semester-to-
+  /// semester running average. See `CgpaEngine.computeStanding`.
+  creditWeighted,
+
+  /// A recursive, credit-unit-BLIND running average, confirmed against a
+  /// specific institution's registry (not a generic default — do not set
+  /// this on any scheme without the same verification):
+  ///   CGPA after semester 1 = GPA₁
+  ///   CGPA after semester N = (CGPA after semester N-1 + GPAₙ) / 2
+  /// Because this ignores credit units entirely, the most RECENT semester
+  /// is always weighted 50% regardless of its own credit load, and an
+  /// early semester's influence decays geometrically ((1/2)^(N-1) by
+  /// semester N) rather than staying proportional to its credit units.
+  /// This is NOT a stylistic variant of [creditWeighted] -- on an
+  /// uneven-credit-load transcript the two can resolve to different
+  /// classifications on an identical record. See
+  /// `CgpaEngine.computeStanding`'s branch for the exact recurrence.
+  recursiveSemesterAverage,
+}
+
 /// A single letter grade definition within a scheme.
 class GradeDefinition {
   final String letter;
@@ -115,6 +146,13 @@ class GradingScheme {
   final List<ClassificationBand> classifications;
   final RepeatPolicy repeatPolicy;
 
+  /// Defaults to [CgpaAggregationMode.creditWeighted] -- the standard,
+  /// transcript-correct definition -- for every scheme, seeded or custom,
+  /// unless explicitly set otherwise. Never defaulted to
+  /// [CgpaAggregationMode.recursiveSemesterAverage] for a new institution
+  /// without the same registry verification FUTO's own switch required.
+  final CgpaAggregationMode cgpaAggregation;
+
   /// Only meaningful when [repeatPolicy] is [RepeatPolicy.replaceWithCap].
   final double? repeatCapPoint;
 
@@ -150,6 +188,7 @@ class GradingScheme {
     required this.classifications,
     required this.repeatPolicy,
     this.repeatCapPoint,
+    this.cgpaAggregation = CgpaAggregationMode.creditWeighted,
     this.isCustom = false,
     this.isVerified = true,
     this.firstTermLabel = 'First Semester',
@@ -261,6 +300,7 @@ class GradingScheme {
     List<ClassificationBand>? classifications,
     RepeatPolicy? repeatPolicy,
     double? repeatCapPoint,
+    CgpaAggregationMode? cgpaAggregation,
     bool? isCustom,
     bool? isVerified,
     String? firstTermLabel,
@@ -278,6 +318,7 @@ class GradingScheme {
         classifications: classifications ?? this.classifications,
         repeatPolicy: repeatPolicy ?? this.repeatPolicy,
         repeatCapPoint: repeatCapPoint ?? this.repeatCapPoint,
+        cgpaAggregation: cgpaAggregation ?? this.cgpaAggregation,
         isCustom: isCustom ?? this.isCustom,
         isVerified: isVerified ?? this.isVerified,
         firstTermLabel: firstTermLabel ?? this.firstTermLabel,
@@ -296,6 +337,7 @@ class GradingScheme {
         'classifications': classifications.map((c) => c.toJson()).toList(),
         'repeatPolicy': repeatPolicy.name,
         'repeatCapPoint': repeatCapPoint,
+        'cgpaAggregation': cgpaAggregation.name,
         'isCustom': isCustom,
         'isVerified': isVerified,
         'firstTermLabel': firstTermLabel,
@@ -321,6 +363,13 @@ class GradingScheme {
         repeatPolicy: RepeatPolicy.values
             .firstWhere((p) => p.name == json['repeatPolicy']),
         repeatCapPoint: (json['repeatCapPoint'] as num?)?.toDouble(),
+        // Absent on every record saved before this field existed --
+        // defaults to the standard, transcript-correct mode, never to the
+        // unverified recursive one.
+        cgpaAggregation: CgpaAggregationMode.values.firstWhere(
+          (m) => m.name == json['cgpaAggregation'],
+          orElse: () => CgpaAggregationMode.creditWeighted,
+        ),
         isCustom: json['isCustom'] as bool? ?? false,
         isVerified: json['isVerified'] as bool? ?? true,
         firstTermLabel: json['firstTermLabel'] as String? ?? 'First Semester',

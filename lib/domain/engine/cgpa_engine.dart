@@ -90,6 +90,17 @@ class AcademicStanding {
   final List<SemesterComputation> semesters;
   final List<CalculationIssue> issues;
 
+  /// Cumulative CGPA after each semester, in chronological order -- the
+  /// series a trend chart plots. Computed once, during [CgpaEngine
+  /// .computeStanding], under whichever [CgpaAggregationMode] the active
+  /// scheme specifies -- NOT derived lazily from [totalQualityPoints]/
+  /// [totalCreditUnits], which would silently assume credit-weighting
+  /// regardless of the scheme's real policy and disagree with [cgpa]
+  /// itself under the recursive mode. A single point cannot show a trend,
+  /// so callers with fewer than two semesters should not render it as a
+  /// line.
+  final List<double> cumulativeCgpaTrend;
+
   const AcademicStanding({
     required this.cgpa,
     required this.totalQualityPoints,
@@ -98,11 +109,11 @@ class AcademicStanding {
     this.classification,
     this.semesters = const [],
     this.issues = const [],
+    this.cumulativeCgpaTrend = const [],
   });
 
   bool get hasData => totalCreditUnits > 0;
-  bool get hasErrors =>
-      issues.any((i) => i.severity == IssueSeverity.error);
+  bool get hasErrors => issues.any((i) => i.severity == IssueSeverity.error);
 
   /// Best semester GPA on record. The projection solver uses this as the
   /// honest benchmark for feasibility rather than inventing a probability.
@@ -118,23 +129,9 @@ class AcademicStanding {
     return withData.map((s) => s.gpa).reduce((a, b) => a < b ? a : b);
   }
 
-  /// Cumulative CGPA after each semester, in chronological order — the
-  /// series a trend chart plots. A single point cannot show a trend, so
-  /// callers with fewer than two semesters should not render it as a line.
-  List<double> get cumulativeCgpaTrend {
-    double qp = 0;
-    int units = 0;
-    return semesters.map((s) {
-      qp += s.qualityPoints;
-      units += s.creditUnits;
-      return units == 0 ? 0.0 : CgpaEngine.round2(qp / units);
-    }).toList();
-  }
-
   /// Trend across the last [window] semesters. Positive means improving.
   double? recentTrend({int window = 3}) {
-    final withData =
-        semesters.where((s) => s.creditUnits > 0).toList();
+    final withData = semesters.where((s) => s.creditUnits > 0).toList();
     if (withData.length < 2) return null;
     final slice = withData.length <= window
         ? withData
@@ -185,8 +182,7 @@ class CgpaEngine {
         issueSink?.add(CalculationIssue(
           resultId: result.id,
           courseCode: result.courseCode,
-          message:
-              'Grade "${result.grade}" is not defined in ${scheme.name}.',
+          message: 'Grade "${result.grade}" is not defined in ${scheme.name}.',
           severity: IssueSeverity.error,
         ));
         excluded.add(ExcludedResult(
@@ -297,6 +293,11 @@ class CgpaEngine {
     final issues = <CalculationIssue>[];
     final computations = <SemesterComputation>[];
 
+    // Raw totals -- "how many credits/quality points has this student
+    // banked in total" -- are the same question regardless of HOW they
+    // combine into a cumulative figure, so these are always a plain sum,
+    // independent of [GradingScheme.cgpaAggregation]. Only the cumulative
+    // CGPA itself (and its trend) branch below.
     double totalQp = 0;
     int totalUnits = 0;
     int totalPassed = 0;
@@ -315,7 +316,8 @@ class CgpaEngine {
       totalPassed += computation.creditsPassed;
     }
 
-    final cgpa = totalUnits == 0 ? 0.0 : round2(totalQp / totalUnits);
+    final trend = _cumulativeTrend(computations, scheme.cgpaAggregation);
+    final cgpa = trend.isEmpty ? 0.0 : trend.last;
 
     return AcademicStanding(
       cgpa: cgpa,
@@ -325,7 +327,45 @@ class CgpaEngine {
       classification: scheme.classify(cgpa),
       semesters: computations,
       issues: issues,
+      cumulativeCgpaTrend: trend,
     );
+  }
+
+  /// The running CGPA after each semester, under [mode]. [cgpa] (the final
+  /// figure) is always just this list's last entry -- the two can never
+  /// disagree, because there is only one computation, not two.
+  static List<double> _cumulativeTrend(
+    List<SemesterComputation> computations,
+    CgpaAggregationMode mode,
+  ) {
+    switch (mode) {
+      case CgpaAggregationMode.creditWeighted:
+        double qp = 0;
+        int units = 0;
+        return computations.map((s) {
+          qp += s.qualityPoints;
+          units += s.creditUnits;
+          return units == 0 ? 0.0 : round2(qp / units);
+        }).toList();
+
+      case CgpaAggregationMode.recursiveSemesterAverage:
+        final trend = <double>[];
+        for (final comp in computations) {
+          // A semester with no counted credits (e.g. every result on it
+          // was excluded) carries no real GPA to average in -- treated as
+          // a no-op, same as it already is under credit-weighting (adding
+          // 0 quality points over 0 credits never moves that ratio).
+          // Folding a hard 0.0 into the recursive average here would
+          // otherwise roughly halve a real CGPA over one empty semester.
+          if (comp.creditUnits == 0) {
+            trend.add(trend.isEmpty ? 0.0 : trend.last);
+            continue;
+          }
+          trend.add(
+              trend.isEmpty ? comp.gpa : round2((trend.last + comp.gpa) / 2));
+        }
+        return trend;
+    }
   }
 
   /// Recalculate from a mutated semester list.

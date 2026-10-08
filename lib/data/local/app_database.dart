@@ -85,7 +85,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -140,6 +140,14 @@ class AppDatabase extends _$AppDatabase {
           // v10 -> v11: the Result slip wallet on the Results screen.
           if (from < 11) {
             await m.createTable(slipUploads);
+          }
+          // v11 -> v12: a second, opt-in cumulative-CGPA aggregation mode
+          // (Me tab's Grading scheme sheet) -- see
+          // `GradingScheme.cgpaAggregation`'s doc comment. Every existing
+          // row gets the column's own default (creditWeighted, the
+          // standard method), never silently switched to the other one.
+          if (from < 12) {
+            await m.addColumn(gradingSchemes, gradingSchemes.cgpaAggregation);
           }
         },
       );

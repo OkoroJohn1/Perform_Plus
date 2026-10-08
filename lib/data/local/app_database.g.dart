@@ -1700,6 +1700,15 @@ class $GradingSchemesTable extends GradingSchemes
   late final GeneratedColumn<double> repeatCapPoint = GeneratedColumn<double>(
       'repeat_cap_point', aliasedName, true,
       type: DriftSqlType.double, requiredDuringInsert: false);
+  @override
+  late final GeneratedColumnWithTypeConverter<CgpaAggregationMode, String>
+      cgpaAggregation = GeneratedColumn<String>(
+              'cgpa_aggregation', aliasedName, false,
+              type: DriftSqlType.string,
+              requiredDuringInsert: false,
+              defaultValue: Constant(CgpaAggregationMode.creditWeighted.name))
+          .withConverter<CgpaAggregationMode>(
+              $GradingSchemesTable.$convertercgpaAggregation);
   static const VerificationMeta _isCustomMeta =
       const VerificationMeta('isCustom');
   @override
@@ -1749,6 +1758,7 @@ class $GradingSchemesTable extends GradingSchemes
         classifications,
         repeatPolicy,
         repeatCapPoint,
+        cgpaAggregation,
         isCustom,
         isVerified,
         firstTermLabel,
@@ -1871,6 +1881,9 @@ class $GradingSchemesTable extends GradingSchemes
               DriftSqlType.string, data['${effectivePrefix}repeat_policy'])!),
       repeatCapPoint: attachedDatabase.typeMapping.read(
           DriftSqlType.double, data['${effectivePrefix}repeat_cap_point']),
+      cgpaAggregation: $GradingSchemesTable.$convertercgpaAggregation.fromSql(
+          attachedDatabase.typeMapping.read(DriftSqlType.string,
+              data['${effectivePrefix}cgpa_aggregation'])!),
       isCustom: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_custom'])!,
       isVerified: attachedDatabase.typeMapping
@@ -1894,6 +1907,9 @@ class $GradingSchemesTable extends GradingSchemes
   static JsonTypeConverter2<RepeatPolicy, String, String>
       $converterrepeatPolicy =
       const EnumNameConverter<RepeatPolicy>(RepeatPolicy.values);
+  static JsonTypeConverter2<CgpaAggregationMode, String, String>
+      $convertercgpaAggregation =
+      const EnumNameConverter<CgpaAggregationMode>(CgpaAggregationMode.values);
 }
 
 class GradingSchemeRow extends DataClass
@@ -1909,6 +1925,7 @@ class GradingSchemeRow extends DataClass
   final List<ClassificationBand> classifications;
   final RepeatPolicy repeatPolicy;
   final double? repeatCapPoint;
+  final CgpaAggregationMode cgpaAggregation;
   final bool isCustom;
   final bool isVerified;
   final String firstTermLabel;
@@ -1925,6 +1942,7 @@ class GradingSchemeRow extends DataClass
       required this.classifications,
       required this.repeatPolicy,
       this.repeatCapPoint,
+      required this.cgpaAggregation,
       required this.isCustom,
       required this.isVerified,
       required this.firstTermLabel,
@@ -1957,6 +1975,11 @@ class GradingSchemeRow extends DataClass
     if (!nullToAbsent || repeatCapPoint != null) {
       map['repeat_cap_point'] = Variable<double>(repeatCapPoint);
     }
+    {
+      map['cgpa_aggregation'] = Variable<String>($GradingSchemesTable
+          .$convertercgpaAggregation
+          .toSql(cgpaAggregation));
+    }
     map['is_custom'] = Variable<bool>(isCustom);
     map['is_verified'] = Variable<bool>(isVerified);
     map['first_term_label'] = Variable<String>(firstTermLabel);
@@ -1981,6 +2004,7 @@ class GradingSchemeRow extends DataClass
       repeatCapPoint: repeatCapPoint == null && nullToAbsent
           ? const Value.absent()
           : Value(repeatCapPoint),
+      cgpaAggregation: Value(cgpaAggregation),
       isCustom: Value(isCustom),
       isVerified: Value(isVerified),
       firstTermLabel: Value(firstTermLabel),
@@ -2005,6 +2029,8 @@ class GradingSchemeRow extends DataClass
       repeatPolicy: $GradingSchemesTable.$converterrepeatPolicy
           .fromJson(serializer.fromJson<String>(json['repeatPolicy'])),
       repeatCapPoint: serializer.fromJson<double?>(json['repeatCapPoint']),
+      cgpaAggregation: $GradingSchemesTable.$convertercgpaAggregation
+          .fromJson(serializer.fromJson<String>(json['cgpaAggregation'])),
       isCustom: serializer.fromJson<bool>(json['isCustom']),
       isVerified: serializer.fromJson<bool>(json['isVerified']),
       firstTermLabel: serializer.fromJson<String>(json['firstTermLabel']),
@@ -2028,6 +2054,9 @@ class GradingSchemeRow extends DataClass
       'repeatPolicy': serializer.toJson<String>(
           $GradingSchemesTable.$converterrepeatPolicy.toJson(repeatPolicy)),
       'repeatCapPoint': serializer.toJson<double?>(repeatCapPoint),
+      'cgpaAggregation': serializer.toJson<String>($GradingSchemesTable
+          .$convertercgpaAggregation
+          .toJson(cgpaAggregation)),
       'isCustom': serializer.toJson<bool>(isCustom),
       'isVerified': serializer.toJson<bool>(isVerified),
       'firstTermLabel': serializer.toJson<String>(firstTermLabel),
@@ -2047,6 +2076,7 @@ class GradingSchemeRow extends DataClass
           List<ClassificationBand>? classifications,
           RepeatPolicy? repeatPolicy,
           Value<double?> repeatCapPoint = const Value.absent(),
+          CgpaAggregationMode? cgpaAggregation,
           bool? isCustom,
           bool? isVerified,
           String? firstTermLabel,
@@ -2065,6 +2095,7 @@ class GradingSchemeRow extends DataClass
         repeatPolicy: repeatPolicy ?? this.repeatPolicy,
         repeatCapPoint:
             repeatCapPoint.present ? repeatCapPoint.value : this.repeatCapPoint,
+        cgpaAggregation: cgpaAggregation ?? this.cgpaAggregation,
         isCustom: isCustom ?? this.isCustom,
         isVerified: isVerified ?? this.isVerified,
         firstTermLabel: firstTermLabel ?? this.firstTermLabel,
@@ -2095,6 +2126,9 @@ class GradingSchemeRow extends DataClass
       repeatCapPoint: data.repeatCapPoint.present
           ? data.repeatCapPoint.value
           : this.repeatCapPoint,
+      cgpaAggregation: data.cgpaAggregation.present
+          ? data.cgpaAggregation.value
+          : this.cgpaAggregation,
       isCustom: data.isCustom.present ? data.isCustom.value : this.isCustom,
       isVerified:
           data.isVerified.present ? data.isVerified.value : this.isVerified,
@@ -2121,6 +2155,7 @@ class GradingSchemeRow extends DataClass
           ..write('classifications: $classifications, ')
           ..write('repeatPolicy: $repeatPolicy, ')
           ..write('repeatCapPoint: $repeatCapPoint, ')
+          ..write('cgpaAggregation: $cgpaAggregation, ')
           ..write('isCustom: $isCustom, ')
           ..write('isVerified: $isVerified, ')
           ..write('firstTermLabel: $firstTermLabel, ')
@@ -2142,6 +2177,7 @@ class GradingSchemeRow extends DataClass
       classifications,
       repeatPolicy,
       repeatCapPoint,
+      cgpaAggregation,
       isCustom,
       isVerified,
       firstTermLabel,
@@ -2161,6 +2197,7 @@ class GradingSchemeRow extends DataClass
           other.classifications == this.classifications &&
           other.repeatPolicy == this.repeatPolicy &&
           other.repeatCapPoint == this.repeatCapPoint &&
+          other.cgpaAggregation == this.cgpaAggregation &&
           other.isCustom == this.isCustom &&
           other.isVerified == this.isVerified &&
           other.firstTermLabel == this.firstTermLabel &&
@@ -2179,6 +2216,7 @@ class GradingSchemesCompanion extends UpdateCompanion<GradingSchemeRow> {
   final Value<List<ClassificationBand>> classifications;
   final Value<RepeatPolicy> repeatPolicy;
   final Value<double?> repeatCapPoint;
+  final Value<CgpaAggregationMode> cgpaAggregation;
   final Value<bool> isCustom;
   final Value<bool> isVerified;
   final Value<String> firstTermLabel;
@@ -2196,6 +2234,7 @@ class GradingSchemesCompanion extends UpdateCompanion<GradingSchemeRow> {
     this.classifications = const Value.absent(),
     this.repeatPolicy = const Value.absent(),
     this.repeatCapPoint = const Value.absent(),
+    this.cgpaAggregation = const Value.absent(),
     this.isCustom = const Value.absent(),
     this.isVerified = const Value.absent(),
     this.firstTermLabel = const Value.absent(),
@@ -2214,6 +2253,7 @@ class GradingSchemesCompanion extends UpdateCompanion<GradingSchemeRow> {
     required List<ClassificationBand> classifications,
     required RepeatPolicy repeatPolicy,
     this.repeatCapPoint = const Value.absent(),
+    this.cgpaAggregation = const Value.absent(),
     this.isCustom = const Value.absent(),
     this.isVerified = const Value.absent(),
     this.firstTermLabel = const Value.absent(),
@@ -2240,6 +2280,7 @@ class GradingSchemesCompanion extends UpdateCompanion<GradingSchemeRow> {
     Expression<String>? classifications,
     Expression<String>? repeatPolicy,
     Expression<double>? repeatCapPoint,
+    Expression<String>? cgpaAggregation,
     Expression<bool>? isCustom,
     Expression<bool>? isVerified,
     Expression<String>? firstTermLabel,
@@ -2258,6 +2299,7 @@ class GradingSchemesCompanion extends UpdateCompanion<GradingSchemeRow> {
       if (classifications != null) 'classifications': classifications,
       if (repeatPolicy != null) 'repeat_policy': repeatPolicy,
       if (repeatCapPoint != null) 'repeat_cap_point': repeatCapPoint,
+      if (cgpaAggregation != null) 'cgpa_aggregation': cgpaAggregation,
       if (isCustom != null) 'is_custom': isCustom,
       if (isVerified != null) 'is_verified': isVerified,
       if (firstTermLabel != null) 'first_term_label': firstTermLabel,
@@ -2278,6 +2320,7 @@ class GradingSchemesCompanion extends UpdateCompanion<GradingSchemeRow> {
       Value<List<ClassificationBand>>? classifications,
       Value<RepeatPolicy>? repeatPolicy,
       Value<double?>? repeatCapPoint,
+      Value<CgpaAggregationMode>? cgpaAggregation,
       Value<bool>? isCustom,
       Value<bool>? isVerified,
       Value<String>? firstTermLabel,
@@ -2295,6 +2338,7 @@ class GradingSchemesCompanion extends UpdateCompanion<GradingSchemeRow> {
       classifications: classifications ?? this.classifications,
       repeatPolicy: repeatPolicy ?? this.repeatPolicy,
       repeatCapPoint: repeatCapPoint ?? this.repeatCapPoint,
+      cgpaAggregation: cgpaAggregation ?? this.cgpaAggregation,
       isCustom: isCustom ?? this.isCustom,
       isVerified: isVerified ?? this.isVerified,
       firstTermLabel: firstTermLabel ?? this.firstTermLabel,
@@ -2344,6 +2388,11 @@ class GradingSchemesCompanion extends UpdateCompanion<GradingSchemeRow> {
     if (repeatCapPoint.present) {
       map['repeat_cap_point'] = Variable<double>(repeatCapPoint.value);
     }
+    if (cgpaAggregation.present) {
+      map['cgpa_aggregation'] = Variable<String>($GradingSchemesTable
+          .$convertercgpaAggregation
+          .toSql(cgpaAggregation.value));
+    }
     if (isCustom.present) {
       map['is_custom'] = Variable<bool>(isCustom.value);
     }
@@ -2376,6 +2425,7 @@ class GradingSchemesCompanion extends UpdateCompanion<GradingSchemeRow> {
           ..write('classifications: $classifications, ')
           ..write('repeatPolicy: $repeatPolicy, ')
           ..write('repeatCapPoint: $repeatCapPoint, ')
+          ..write('cgpaAggregation: $cgpaAggregation, ')
           ..write('isCustom: $isCustom, ')
           ..write('isVerified: $isVerified, ')
           ..write('firstTermLabel: $firstTermLabel, ')
@@ -6785,6 +6835,7 @@ typedef $$GradingSchemesTableCreateCompanionBuilder = GradingSchemesCompanion
   required List<ClassificationBand> classifications,
   required RepeatPolicy repeatPolicy,
   Value<double?> repeatCapPoint,
+  Value<CgpaAggregationMode> cgpaAggregation,
   Value<bool> isCustom,
   Value<bool> isVerified,
   Value<String> firstTermLabel,
@@ -6804,6 +6855,7 @@ typedef $$GradingSchemesTableUpdateCompanionBuilder = GradingSchemesCompanion
   Value<List<ClassificationBand>> classifications,
   Value<RepeatPolicy> repeatPolicy,
   Value<double?> repeatCapPoint,
+  Value<CgpaAggregationMode> cgpaAggregation,
   Value<bool> isCustom,
   Value<bool> isVerified,
   Value<String> firstTermLabel,
@@ -6862,6 +6914,12 @@ class $$GradingSchemesTableFilterComposer
   ColumnFilters<double> get repeatCapPoint => $composableBuilder(
       column: $table.repeatCapPoint,
       builder: (column) => ColumnFilters(column));
+
+  ColumnWithTypeConverterFilters<CgpaAggregationMode, CgpaAggregationMode,
+          String>
+      get cgpaAggregation => $composableBuilder(
+          column: $table.cgpaAggregation,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnFilters<bool> get isCustom => $composableBuilder(
       column: $table.isCustom, builder: (column) => ColumnFilters(column));
@@ -6926,6 +6984,10 @@ class $$GradingSchemesTableOrderingComposer
       column: $table.repeatCapPoint,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get cgpaAggregation => $composableBuilder(
+      column: $table.cgpaAggregation,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get isCustom => $composableBuilder(
       column: $table.isCustom, builder: (column) => ColumnOrderings(column));
 
@@ -6985,6 +7047,10 @@ class $$GradingSchemesTableAnnotationComposer
   GeneratedColumn<double> get repeatCapPoint => $composableBuilder(
       column: $table.repeatCapPoint, builder: (column) => column);
 
+  GeneratedColumnWithTypeConverter<CgpaAggregationMode, String>
+      get cgpaAggregation => $composableBuilder(
+          column: $table.cgpaAggregation, builder: (column) => column);
+
   GeneratedColumn<bool> get isCustom =>
       $composableBuilder(column: $table.isCustom, builder: (column) => column);
 
@@ -7037,6 +7103,7 @@ class $$GradingSchemesTableTableManager extends RootTableManager<
                 const Value.absent(),
             Value<RepeatPolicy> repeatPolicy = const Value.absent(),
             Value<double?> repeatCapPoint = const Value.absent(),
+            Value<CgpaAggregationMode> cgpaAggregation = const Value.absent(),
             Value<bool> isCustom = const Value.absent(),
             Value<bool> isVerified = const Value.absent(),
             Value<String> firstTermLabel = const Value.absent(),
@@ -7055,6 +7122,7 @@ class $$GradingSchemesTableTableManager extends RootTableManager<
             classifications: classifications,
             repeatPolicy: repeatPolicy,
             repeatCapPoint: repeatCapPoint,
+            cgpaAggregation: cgpaAggregation,
             isCustom: isCustom,
             isVerified: isVerified,
             firstTermLabel: firstTermLabel,
@@ -7073,6 +7141,7 @@ class $$GradingSchemesTableTableManager extends RootTableManager<
             required List<ClassificationBand> classifications,
             required RepeatPolicy repeatPolicy,
             Value<double?> repeatCapPoint = const Value.absent(),
+            Value<CgpaAggregationMode> cgpaAggregation = const Value.absent(),
             Value<bool> isCustom = const Value.absent(),
             Value<bool> isVerified = const Value.absent(),
             Value<String> firstTermLabel = const Value.absent(),
@@ -7091,6 +7160,7 @@ class $$GradingSchemesTableTableManager extends RootTableManager<
             classifications: classifications,
             repeatPolicy: repeatPolicy,
             repeatCapPoint: repeatCapPoint,
+            cgpaAggregation: cgpaAggregation,
             isCustom: isCustom,
             isVerified: isVerified,
             firstTermLabel: firstTermLabel,

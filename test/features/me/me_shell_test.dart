@@ -255,7 +255,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('saveGradingSchemeTap')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Change repeat policy?'), findsOneWidget);
+    expect(find.text('Change grading policy?'), findsOneWidget);
     expect(find.textContaining('3.00 → 4.50'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('confirmPolicyChangeTap')));

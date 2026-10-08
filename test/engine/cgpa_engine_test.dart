@@ -428,4 +428,124 @@ void main() {
       expect(payload.containsKey('is_reachable'), isTrue);
     });
   });
+
+  // `CgpaAggregationMode.recursiveSemesterAverage` — a second, explicitly
+  // opt-in cumulative-CGPA policy (CGPA after semester N =
+  // (CGPA after semester N-1 + GPAₙ) / 2, credit-unit-blind), confirmed
+  // against one specific institution's registry. `creditWeighted` stays
+  // the default for every scheme that hasn't had the same verification —
+  // see `GradingScheme.cgpaAggregation`'s doc comment. Never set this mode
+  // on a new scheme without the same confirmation.
+  group('recursive CGPA aggregation mode', () {
+    final recursiveScheme =
+        scheme.copyWith(cgpaAggregation: CgpaAggregationMode.recursiveSemesterAverage);
+
+    test('CGPA after each semester is the running (previous + new) / 2', () {
+      final semesters = [
+        _s('s1', 100, SemesterTerm.first, [_r('A101', 3, 'A')]), // GPA 5.0
+        _s('s2', 100, SemesterTerm.second, [_r('B101', 3, 'C', semesterId: 's2')]), // GPA 3.0
+        _s('s3', 200, SemesterTerm.first, [_r('C201', 3, 'E', semesterId: 's3')]), // GPA 1.0
+      ];
+
+      final standing = CgpaEngine.computeStanding(semesters: semesters, scheme: recursiveScheme);
+
+      // CGPA1 = 5.0. CGPA2 = (5+3)/2 = 4.0. CGPA3 = (4+1)/2 = 2.5.
+      expect(standing.cumulativeCgpaTrend, [5.0, 4.0, 2.5]);
+      expect(standing.cgpa, 2.5);
+    });
+
+    test('a zero-credit semester is a no-op, not a corrupting zero', () {
+      final semesters = [
+        _s('s1', 100, SemesterTerm.first, [_r('A101', 3, 'B')]), // GPA 4.0
+        _s('s2', 100, SemesterTerm.second, const []), // nothing on record
+        _s('s3', 200, SemesterTerm.first, [_r('C201', 3, 'C', semesterId: 's3')]), // GPA 3.0
+      ];
+
+      final standing = CgpaEngine.computeStanding(semesters: semesters, scheme: recursiveScheme);
+
+      // s2 carries no credits, so it must leave the running CGPA unchanged
+      // (4.0) rather than averaging a hard 0.0 in -- (4.0 + 0.0) / 2 = 2.0
+      // would be the corrupted version this guards against.
+      expect(standing.cumulativeCgpaTrend, [4.0, 4.0, 3.5]);
+    });
+
+    test(
+        'the two aggregation modes resolve an identical, uneven-credit transcript to different classifications',
+        () {
+      // Exactly the worked example used to justify this feature: a 6-unit
+      // 5.0 semester followed by two 18-unit 3.0 semesters.
+      final semesters = [
+        _s('s1', 100, SemesterTerm.first, [_r('A101', 6, 'A')]),
+        _s('s2', 100, SemesterTerm.second, [_r('B101', 18, 'C', semesterId: 's2')]),
+        _s('s3', 200, SemesterTerm.first, [_r('C201', 18, 'C', semesterId: 's3')]),
+      ];
+
+      final weighted = CgpaEngine.computeStanding(semesters: semesters, scheme: scheme);
+      final recursive = CgpaEngine.computeStanding(semesters: semesters, scheme: recursiveScheme);
+
+      // (6*5 + 18*3 + 18*3) / 42 = 138/42 = 3.2857... -> 3.29 -> 2:2.
+      expect(weighted.cgpa, closeTo(3.29, 0.005));
+      expect(weighted.classification?.shortLabel, '2:2');
+
+      // CGPA1=5.0, CGPA2=(5+3)/2=4.0, CGPA3=(4+3)/2=3.5 -> 2:1.
+      expect(recursive.cgpa, 3.50);
+      expect(recursive.classification?.shortLabel, '2:1');
+
+      // The whole point: same transcript, different classification.
+      expect(weighted.classification?.shortLabel, isNot(recursive.classification?.shortLabel));
+    });
+
+    test('backward projection solves the geometric-decay inverse, not the linear one', () {
+      final standing = AcademicStanding(
+        cgpa: 4.0,
+        totalQualityPoints: 4.0 * 20,
+        totalCreditUnits: 20,
+        totalCreditsPassed: 20,
+        classification: recursiveScheme.classify(4.0),
+        semesters: const [],
+        cumulativeCgpaTrend: const [4.0],
+      );
+
+      final p = ProjectionSolver.solveForTarget(
+        standing: standing,
+        scheme: recursiveScheme,
+        targetCgpa: 4.5,
+        semestersRemaining: 2,
+      );
+
+      // decay = 2^2 = 4. required = (4*4.5 - 4.0) / (4-1) = 14/3 = 4.6667.
+      expect(p.requiredAverage, closeTo(4.67, 0.01));
+      // ceiling = maxPoint + (current - maxPoint)/decay = 5.0 + (4.0-5.0)/4 = 4.75.
+      expect(p.ceilingCgpa, 4.75);
+      // Sustaining the current CGPA is a fixed point of the recurrence.
+      expect(p.coastingCgpa, 4.0);
+    });
+
+    test('forward simulation compounds geometrically, not linearly', () {
+      final standing = AcademicStanding(
+        cgpa: 4.0,
+        totalQualityPoints: 4.0 * 20,
+        totalCreditUnits: 20,
+        totalCreditsPassed: 20,
+        classification: recursiveScheme.classify(4.0),
+        semesters: const [],
+        cumulativeCgpaTrend: const [4.0],
+      );
+
+      final f = ProjectionSolver.simulate(
+        standing: standing,
+        scheme: recursiveScheme,
+        assumedGpa: 5.0,
+        semestersRemaining: 2,
+      );
+
+      // decay = 4. projected = 5.0 + (4.0-5.0)/4 = 4.75.
+      expect(f.projectedCgpa, 4.75);
+      expect(f.deltaFromCurrent, 0.75);
+    });
+
+    test('a scheme with no explicit mode defaults to credit-weighted', () {
+      expect(scheme.cgpaAggregation, CgpaAggregationMode.creditWeighted);
+    });
+  });
 }

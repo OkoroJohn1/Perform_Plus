@@ -13,6 +13,8 @@
 /// all four remaining semesters" lands harder than a made-up number.
 library;
 
+import 'dart:math' as math;
+
 import 'cgpa_engine.dart';
 import '../models/grading_scheme.dart';
 
@@ -139,6 +141,8 @@ class ProjectionSolver {
 
   /// Backward projection: what average is needed to hit [targetCgpa]?
   ///
+  /// Under [CgpaAggregationMode.creditWeighted]:
+  ///
   ///   target = (earnedQP + x * remainingCredits)
   ///            / (earnedCredits + remainingCredits)
   ///
@@ -146,6 +150,16 @@ class ProjectionSolver {
   ///
   ///   x = (target * (earnedCredits + remainingCredits) - earnedQP)
   ///       / remainingCredits
+  ///
+  /// Under [CgpaAggregationMode.recursiveSemesterAverage] the relationship
+  /// is entirely different -- there is no credit-unit term at all, and
+  /// sustaining the same GPA `x` for `k` more semesters compounds
+  /// geometrically rather than linearly. Projecting forward `k` semesters
+  /// from current CGPA `C` at a sustained GPA `x` gives
+  /// `x + (C - x) / 2^k` (provable by induction from the recurrence
+  /// `CGPAₙ = (CGPAₙ₋₁ + x) / 2`); solving that for `x` against a target
+  /// `T` gives `x = (2^k·T - C) / (2^k - 1)`. See `_solveLinear`/
+  /// `_solveRecursive` below for each branch in full.
   static TargetProjection solveForTarget({
     required AcademicStanding standing,
     required GradingScheme scheme,
@@ -154,24 +168,10 @@ class ProjectionSolver {
     required int semestersRemaining,
     int creditsPerSemester = defaultCreditsPerSemester,
   }) {
-    final earnedQp = standing.totalQualityPoints;
     final earnedCredits = standing.totalCreditUnits;
     final remainingCredits = semestersRemaining * creditsPerSemester;
-    final totalCredits = earnedCredits + remainingCredits;
 
-    final ceiling = totalCredits == 0
-        ? 0.0
-        : CgpaEngine.round2(
-            (earnedQp + scheme.maxPoint * remainingCredits) / totalCredits,
-          );
-
-    final coasting = totalCredits == 0
-        ? 0.0
-        : CgpaEngine.round2(
-            (earnedQp + standing.cgpa * remainingCredits) / totalCredits,
-          );
-
-    // No credits left — the record is final.
+    // No credits/semesters left — the record is final, regardless of mode.
     if (remainingCredits == 0) {
       return TargetProjection(
         targetCgpa: targetCgpa,
@@ -191,9 +191,21 @@ class ProjectionSolver {
       );
     }
 
-    final required = CgpaEngine.round2(
-      (targetCgpa * totalCredits - earnedQp) / remainingCredits,
-    );
+    final (required, ceiling, coasting) = switch (scheme.cgpaAggregation) {
+      CgpaAggregationMode.creditWeighted => _solveLinear(
+          standing: standing,
+          scheme: scheme,
+          targetCgpa: targetCgpa,
+          earnedCredits: earnedCredits,
+          remainingCredits: remainingCredits,
+        ),
+      CgpaAggregationMode.recursiveSemesterAverage => _solveRecursive(
+          standing: standing,
+          scheme: scheme,
+          targetCgpa: targetCgpa,
+          semestersRemaining: semestersRemaining,
+        ),
+    };
 
     final feasibility = _assess(
       required: required,
@@ -205,9 +217,8 @@ class ProjectionSolver {
 
     ClassificationBand? nearest;
     if (feasibility == Feasibility.unreachable) {
-      nearest = scheme.bandsDescending
-          .where((b) => b.minCgpa <= ceiling)
-          .firstOrNull;
+      nearest =
+          scheme.bandsDescending.where((b) => b.minCgpa <= ceiling).firstOrNull;
     }
 
     return TargetProjection(
@@ -234,15 +245,18 @@ class ProjectionSolver {
     required int semestersRemaining,
     int creditsPerSemester = defaultCreditsPerSemester,
   }) {
-    final remainingCredits = semestersRemaining * creditsPerSemester;
-    final totalCredits = standing.totalCreditUnits + remainingCredits;
-
-    final projected = totalCredits == 0
-        ? 0.0
-        : CgpaEngine.round2(
-            (standing.totalQualityPoints + assumedGpa * remainingCredits) /
-                totalCredits,
-          );
+    final projected = switch (scheme.cgpaAggregation) {
+      CgpaAggregationMode.creditWeighted => _projectLinear(
+          standing: standing,
+          assumedGpa: assumedGpa,
+          remainingCredits: semestersRemaining * creditsPerSemester,
+        ),
+      CgpaAggregationMode.recursiveSemesterAverage => _projectRecursive(
+          currentCgpa: standing.cgpa,
+          assumedGpa: assumedGpa,
+          semestersRemaining: semestersRemaining,
+        ),
+    };
 
     return ForwardProjection(
       assumedGpa: assumedGpa,
@@ -250,6 +264,79 @@ class ProjectionSolver {
       projectedClassification: scheme.classify(projected),
       deltaFromCurrent: CgpaEngine.round2(projected - standing.cgpa),
     );
+  }
+
+  static double _projectLinear({
+    required AcademicStanding standing,
+    required double assumedGpa,
+    required int remainingCredits,
+  }) {
+    final totalCredits = standing.totalCreditUnits + remainingCredits;
+    if (totalCredits == 0) return 0.0;
+    return CgpaEngine.round2(
+      (standing.totalQualityPoints + assumedGpa * remainingCredits) /
+          totalCredits,
+    );
+  }
+
+  /// `x + (C - x) / 2^k` -- see [solveForTarget]'s doc comment for the
+  /// derivation. `k == 0` (nothing left to project) is already filtered
+  /// out by every caller before this is reached.
+  static double _projectRecursive({
+    required double currentCgpa,
+    required double assumedGpa,
+    required int semestersRemaining,
+  }) {
+    final decay = math.pow(2, semestersRemaining).toDouble();
+    return CgpaEngine.round2(assumedGpa + (currentCgpa - assumedGpa) / decay);
+  }
+
+  static (double required, double ceiling, double coasting) _solveLinear({
+    required AcademicStanding standing,
+    required GradingScheme scheme,
+    required double targetCgpa,
+    required int earnedCredits,
+    required int remainingCredits,
+  }) {
+    final earnedQp = standing.totalQualityPoints;
+    final totalCredits = earnedCredits + remainingCredits;
+
+    final ceiling = CgpaEngine.round2(
+      (earnedQp + scheme.maxPoint * remainingCredits) / totalCredits,
+    );
+    final coasting = CgpaEngine.round2(
+      (earnedQp + standing.cgpa * remainingCredits) / totalCredits,
+    );
+    final required = CgpaEngine.round2(
+      (targetCgpa * totalCredits - earnedQp) / remainingCredits,
+    );
+    return (required, ceiling, coasting);
+  }
+
+  /// `x = (2^k·T - C) / (2^k - 1)`, the inverse of [_projectRecursive]'s
+  /// forward formula -- see [solveForTarget]'s doc comment.
+  static (double required, double ceiling, double coasting) _solveRecursive({
+    required AcademicStanding standing,
+    required GradingScheme scheme,
+    required double targetCgpa,
+    required int semestersRemaining,
+  }) {
+    final currentCgpa = standing.cgpa;
+    final decay = math.pow(2, semestersRemaining).toDouble();
+
+    final ceiling = _projectRecursive(
+      currentCgpa: currentCgpa,
+      assumedGpa: scheme.maxPoint,
+      semestersRemaining: semestersRemaining,
+    );
+    // Sustaining exactly the current CGPA as every future semester's GPA
+    // is a fixed point of the recurrence -- the average of C and C is C --
+    // so coasting always equals today's CGPA under this mode.
+    final coasting = currentCgpa;
+    final required = CgpaEngine.round2(
+      (decay * targetCgpa - currentCgpa) / (decay - 1),
+    );
+    return (required, ceiling, coasting);
   }
 
   /// Every classification band with its required average, for the goal
