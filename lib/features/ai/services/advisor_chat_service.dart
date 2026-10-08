@@ -13,9 +13,11 @@
 /// lets each chunk of text reach the UI as it arrives instead.
 ///
 /// Per AGENTS.md's "THE RULE THAT MATTERS MOST", [context] must always come
-/// from `buildAdvisorChatContext` (`advisor_insights.dart`) -- already-
-/// computed facts, never raw grades -- so this file has no way to send
-/// anything else even by accident.
+/// from `buildAdvisorChatContext` (`advisor_insights.dart`) -- which now
+/// includes a per-course breakdown (grade, credit unit, pass/fail, carryover
+/// status), but every number in it is still a scheme lookup or an engine-
+/// computed aggregate, never something the model is asked to calculate
+/// itself -- so this file has no way to send anything else even by accident.
 library;
 
 import 'dart:async';

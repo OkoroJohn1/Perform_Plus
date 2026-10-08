@@ -309,20 +309,106 @@ Insight _insufficientDataInsight() => const Insight(
           'compares to your usual performance.',
     );
 
+/// Per-course facts for the chat context, one row per attempt (a repeated
+/// course appears once per attempt, not collapsed to its latest grade) --
+/// this is the resolution a student actually asks about ("what am I doing
+/// poorly in", "what's outstanding in CSC301"), which the record-wide
+/// aggregates above cannot answer. Still never arithmetic: [gradePoint] is
+/// a scheme lookup (letter -> point, the same lookup [CgpaEngine] itself
+/// does), not a computed average -- the model phrases and prioritises these
+/// facts, it does not derive them. Rows the engine actually excluded from
+/// the CGPA (unrecognised grade, invalid credit unit, or -- under
+/// `replaceOriginal` -- an original failure superseded by a later repeat)
+/// carry [isExcluded]/[exclusionReason] instead of a silently-dropped row,
+/// matching the "every excluded result carries a human-readable reason"
+/// rule in AGENTS.md.
+///
+/// Sorted weakest-first (lowest grade point, excluded/ungraded rows last)
+/// so a question like "what am I doing poorly in" can be answered from the
+/// front of the list without the model needing to scan or rank anything
+/// itself.
+List<Map<String, dynamic>> _courseBreakdown(
+  List<Semester> rawSemesters,
+  AcademicStanding standing,
+  GradingScheme scheme,
+) {
+  final exclusionReasons = <String, String>{};
+  for (final comp in standing.semesters) {
+    for (final e in comp.excluded) {
+      exclusionReasons[e.resultId] = e.reason;
+    }
+  }
+
+  final attemptsByCode = <String, int>{};
+  for (final s in rawSemesters) {
+    for (final r in s.results) {
+      attemptsByCode[r.courseCode] = (attemptsByCode[r.courseCode] ?? 0) + 1;
+    }
+  }
+
+  final rows = <Map<String, dynamic>>[];
+  for (final s in rawSemesters) {
+    for (final r in s.results) {
+      final reason = exclusionReasons[r.id];
+      final definition = reason == null ? scheme.definitionForLetter(r.grade) : null;
+      rows.add({
+        'course_code': r.courseCode,
+        'course_title': r.courseTitle,
+        'level': s.level,
+        'term': s.term.shortLabel,
+        'session': s.session,
+        'credit_unit': r.creditUnit,
+        'grade': r.grade,
+        'grade_point': definition?.point,
+        'is_failing': definition?.isFailing ?? false,
+        'is_excluded': reason != null,
+        'exclusion_reason': reason,
+        'attempt_number': r.attempt,
+        'total_attempts_on_record': attemptsByCode[r.courseCode],
+        'is_repeat': r.isRepeat,
+      });
+    }
+  }
+
+  rows.sort((a, b) {
+    final ap = a['grade_point'] as double?;
+    final bp = b['grade_point'] as double?;
+    if (ap == null && bp == null) return 0;
+    if (ap == null) return 1;
+    if (bp == null) return -1;
+    return ap.compareTo(bp);
+  });
+  return rows;
+}
+
 /// The payload sent to the `ai-advisor` Edge Function as chat "context" --
 /// the chat counterpart to this file's insight cards, built from the exact
 /// same already-computed [AdvisorState]/[AcademicStanding]/[TargetProjection]
-/// rather than anything re-derived. Per AGENTS.md's "THE RULE THAT MATTERS
-/// MOST", the model receives these computed facts and phrases them; it is
-/// never given [rawSemesters] or any per-course grade to reason about
-/// itself, which is why this function's signature doesn't even accept them.
+/// plus, as of the per-course breakdown below, [rawSemesters] itself. Per
+/// AGENTS.md's "THE RULE THAT MATTERS MOST", the model still never computes
+/// a CGPA/GPA/projection -- those remain engine-only -- but it is now given
+/// the same per-course facts (grade, credit unit, pass/fail, carryover
+/// status) the Academics tab already shows, pre-sorted weakest-first by
+/// [_courseBreakdown], so a question like "what am I doing poorly in and
+/// how do I fix it" can be answered from real course names instead of the
+/// generic "I don't have a course breakdown" refusal this used to force.
 Map<String, dynamic> buildAdvisorChatContext({
   required AdvisorState state,
   required AcademicStanding standing,
+  required List<Semester> rawSemesters,
+  required GradingScheme scheme,
   required StudentProfile? profile,
   required ClassificationBand? goalBand,
   required TargetProjection? goalProjection,
 }) {
+  final courseBreakdown = _courseBreakdown(rawSemesters, standing, scheme);
+  final graded = courseBreakdown.where((r) => r['grade_point'] != null).toList();
+  final outstandingCarryovers = courseBreakdown
+      .where(
+        (r) => r['is_failing'] == true && (r['is_repeat'] == true || r['total_attempts_on_record'] == 1),
+      )
+      .toList();
+
   return {
     'has_data': state.hasData,
     'is_critical': state.isCritical,
@@ -347,5 +433,15 @@ Map<String, dynamic> buildAdvisorChatContext({
     'insight_cards': state.insights
         .map((i) => {'kind': i.kind.name, 'title': i.title, 'body': i.body})
         .toList(),
+    // Every attempt on record, weakest grade point first. Lets the model
+    // answer any "how am I doing in X" question directly.
+    'course_breakdown': courseBreakdown,
+    // Convenience slice of the same list -- the 5 lowest-scoring graded
+    // attempts -- so "what am I doing poorly in" doesn't require the model
+    // to re-sort `course_breakdown` itself.
+    'weakest_courses': graded.take(5).toList(),
+    // Any course code still unresolved -- a single failing attempt with no
+    // later repeat yet, or a repeat that's itself still failing.
+    'outstanding_carryovers': outstandingCarryovers,
   };
 }

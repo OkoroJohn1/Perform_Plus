@@ -380,15 +380,15 @@ class _CriticalStandingCard extends StatelessWidget {
               Icon(Icons.support_agent, size: 20, color: context.palette.primary),
               const SizedBox(width: 10),
               Text(
-                'Talk to your academic adviser',
+                'Talk to your department right away',
                 style: TextStyle(color: context.palette.primary, fontSize: 17, fontWeight: FontWeight.w600),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            'Your department decides what happens next — probation, extra semesters, or an '
-            "appeal. Those options aren't visible in your results, and this app can't see them.",
+            'At this CGPA, you should withdraw or discuss repeating the year with your '
+            "department right away — don't wait for this to resolve on its own.",
             style: TextStyle(color: context.palette.bodyText, fontSize: 15.5),
           ),
           const SizedBox(height: 16),

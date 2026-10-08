@@ -6,8 +6,10 @@
 /// Wired to the `ai-advisor` Supabase Edge Function via
 /// `advisor_chat_service.dart`. The model only ever receives
 /// [buildAdvisorChatContext]'s already-computed payload plus the
-/// conversation text — never raw grades — per AGENTS.md's "THE RULE THAT
-/// MATTERS MOST".
+/// conversation text — including, as of the per-course breakdown, every
+/// course/grade/credit-unit on record — but never a raw number it has to
+/// compute itself (no CGPA/GPA/projection arithmetic), per AGENTS.md's "THE
+/// RULE THAT MATTERS MOST".
 library;
 
 import 'package:collection/collection.dart';
@@ -56,6 +58,8 @@ class AdvisorChatScreen extends ConsumerWidget {
     final chatContext = buildAdvisorChatContext(
       state: state,
       standing: standing,
+      rawSemesters: record.semesters,
+      scheme: record.scheme,
       profile: profile,
       goalBand: goal?.band,
       goalProjection: goalProjection,
