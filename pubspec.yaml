@@ -1,7 +1,7 @@
 name: perform_plus
 description: Academic performance tracking and AI advisory for Nigerian students.
 publish_to: none
-version: 0.2.5+8
+version: 0.2.6+9
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -125,6 +125,14 @@ dependencies:
   # the PIN stays the fallback whenever biometrics are unavailable, not
   # enrolled, or the prompt is cancelled.
   local_auth: ^2.3.0
+
+  # Streaming the advisor chat's reply token-by-token
+  # (advisor_chat_service.dart) -- already pulled in transitively, declared
+  # directly since our own code now opens a raw streamed request with it
+  # (supabase_flutter's functions.invoke buffers the whole response, which
+  # is exactly the "nothing shows until the full reply finishes generating"
+  # problem streaming exists to fix).
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:

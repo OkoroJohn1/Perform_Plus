@@ -10,6 +10,7 @@
 /// MATTERS MOST".
 library;
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -176,14 +177,15 @@ class _RealChatState extends ConsumerState<_RealChat> {
     super.dispose();
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom({bool jump = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_listController.hasClients) return;
-      _listController.animateTo(
-        _listController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-      );
+      final target = _listController.position.maxScrollExtent;
+      if (jump) {
+        _listController.jumpTo(target);
+      } else {
+        _listController.animateTo(target, duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+      }
     });
   }
 
@@ -197,6 +199,13 @@ class _RealChatState extends ConsumerState<_RealChat> {
 
   @override
   Widget build(BuildContext context) {
+    // A streaming reply grows the LAST message's text on every chunk --
+    // jump (not animate) to the bottom each time so the growing bubble
+    // never scrolls out from under where the student is reading it.
+    ref.listen(advisorChatHistoryProvider.select((s) => s.messages.lastOrNull?.text), (_, __) {
+      _scrollToBottom(jump: true);
+    });
+
     final chat = ref.watch(advisorChatHistoryProvider);
     final messages = chat.messages;
 
@@ -211,11 +220,8 @@ class _RealChatState extends ConsumerState<_RealChat> {
               : ListView.builder(
                   controller: _listController,
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  itemCount: messages.length + (chat.sending ? 1 : 0),
-                  itemBuilder: (context, i) {
-                    if (i == messages.length) return const _TypingBubble();
-                    return _ChatBubble(message: messages[i]);
-                  },
+                  itemCount: messages.length,
+                  itemBuilder: (context, i) => _ChatBubble(message: messages[i]),
                 ),
         ),
         _ChatInputBar(
@@ -244,6 +250,9 @@ class _ChatBubble extends StatelessWidget {
             ? palette.errorBackground
             : palette.surface;
     final textColor = isUser ? palette.onPrimary : (message.isError ? palette.error : palette.bodyText);
+    // Nothing has streamed in yet -- show a typing cue in place of an empty
+    // bubble rather than waiting for the first chunk to arrive.
+    final stillWaiting = message.isStreaming && message.text.isEmpty;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -259,34 +268,13 @@ class _ChatBubble extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(color: bubbleColor, borderRadius: BorderRadius.circular(16)),
-              child: Text(message.text, style: TextStyle(color: textColor, fontSize: 15, height: 1.35)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TypingBubble extends StatelessWidget {
-  const _TypingBubble();
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          const AdvisorMark(size: 24, simplified: true),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(color: palette.surface, borderRadius: BorderRadius.circular(16)),
-            child: SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2, color: palette.primary),
+              child: stillWaiting
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: palette.primary),
+                    )
+                  : Text(message.text, style: TextStyle(color: textColor, fontSize: 15, height: 1.35)),
             ),
           ),
         ],

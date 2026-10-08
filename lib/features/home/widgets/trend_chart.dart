@@ -19,6 +19,7 @@ import '../../../domain/engine/cgpa_engine.dart';
 import '../../../domain/engine/projection_solver.dart';
 import '../../../domain/models/course_result.dart';
 import '../../../domain/models/grading_scheme.dart';
+import 'trend_detail_view.dart';
 
 String _fmt(double v) => v.toStringAsFixed(2);
 
@@ -34,8 +35,10 @@ extension _StripPresentation on Feasibility {
 
 /// Term naming read from the scheme's own labels (FUTO's Harmattan/Rain,
 /// not the generic First/Second) — abbreviated to 3 letters so "100L Har"
-/// fits the chart's x-axis, never the generic "1st"/"2nd" shortLabel.
-String _shortTermLabel(GradingScheme scheme, SemesterTerm term) {
+/// fits the chart's x-axis, never the generic "1st"/"2nd" shortLabel. Not
+/// private -- `trend_detail_view.dart`'s full-screen breakdown reuses it
+/// for the exact same x-axis labelling.
+String shortTermLabel(GradingScheme scheme, SemesterTerm term) {
   final word = scheme.termLabel(term).split(' ').first;
   return word.length <= 3 ? word : word.substring(0, 3);
 }
@@ -57,6 +60,7 @@ class TrendCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final delta = standing.semesters.length >= 2 ? standing.recentTrend(window: 2) : null;
+    final hasTrend = standing.semesters.length >= 2;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -80,17 +84,35 @@ class TrendCard extends StatelessWidget {
               ),
               const Spacer(),
               if (delta != null) _DeltaChip(delta: delta),
+              if (hasTrend) ...[
+                const SizedBox(width: 8),
+                Icon(Icons.open_in_full, size: 16, color: context.palette.hintText),
+              ],
             ],
           ),
           const SizedBox(height: 16),
-          standing.semesters.length < 2
+          // Tapping to expand only makes sense once there's an actual
+          // trend to zoom into -- the placeholder (< 2 semesters) has
+          // nothing a full-screen view would add.
+          !hasTrend
               ? const TrendPlaceholder()
-              : RepaintBoundary(
-                  child: _TrendChartBody(
+              : InkWell(
+                  key: const ValueKey('trendChartExpandTap'),
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => showTrendDetail(
+                    context,
                     standing: standing,
                     scheme: scheme,
                     rawSemesters: rawSemesters,
                     goal: goal,
+                  ),
+                  child: RepaintBoundary(
+                    child: _TrendChartBody(
+                      standing: standing,
+                      scheme: scheme,
+                      rawSemesters: rawSemesters,
+                      goal: goal,
+                    ),
                   ),
                 ),
         ],
@@ -261,7 +283,7 @@ class _TrendChartBodyState extends State<_TrendChartBody> with TickerProviderSta
             return Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(
-                '${comp.level}L ${_shortTermLabel(scheme, comp.term)}',
+                '${comp.level}L ${shortTermLabel(scheme, comp.term)}',
                 style: TextStyle(color: context.palette.secondaryText, fontSize: 13),
               ),
             );

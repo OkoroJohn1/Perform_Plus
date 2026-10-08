@@ -28,7 +28,26 @@ class AdvisorChatMessage {
   final String text;
   final bool isError;
 
-  const AdvisorChatMessage({required this.isUser, required this.text, this.isError = false});
+  /// True only for the single assistant bubble currently receiving streamed
+  /// text -- lets the UI show a live cursor/typing cue on that bubble
+  /// specifically rather than a separate phantom "typing..." row. Never
+  /// true for anything loaded from storage; streaming is a this-request-only
+  /// state, not something that survives a reload.
+  final bool isStreaming;
+
+  const AdvisorChatMessage({
+    required this.isUser,
+    required this.text,
+    this.isError = false,
+    this.isStreaming = false,
+  });
+
+  AdvisorChatMessage copyWith({String? text, bool? isStreaming}) => AdvisorChatMessage(
+        isUser: isUser,
+        text: text ?? this.text,
+        isError: isError,
+        isStreaming: isStreaming ?? this.isStreaming,
+      );
 
   Map<String, dynamic> toJson() => {'isUser': isUser, 'text': text, 'isError': isError};
 
@@ -92,6 +111,17 @@ class AdvisorChatHistoryController extends StateNotifier<AdvisorChatState> {
     await _dao?.set(_advisorChatHistoryKey, jsonEncode(capped.map((m) => m.toJson()).toList()));
   }
 
+  /// Replaces the LAST message in [state] with [updated] -- used to grow
+  /// the streaming assistant bubble's text in place on every chunk, rather
+  /// than re-rendering the whole list or leaving the student staring at a
+  /// blank/typing bubble until the entire reply finishes generating.
+  void _updateLastMessage(AdvisorChatMessage updated) {
+    final messages = [...state.messages];
+    if (messages.isEmpty) return;
+    messages[messages.length - 1] = updated;
+    state = state.copyWith(messages: messages);
+  }
+
   Future<void> send(String text, {required Map<String, dynamic> context}) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty || state.sending) return;
@@ -103,28 +133,34 @@ class AdvisorChatHistoryController extends StateNotifier<AdvisorChatState> {
         .map((m) => AdvisorChatTurn(isUser: m.isUser, text: m.text))
         .toList();
 
-    state = state.copyWith(messages: [...state.messages, AdvisorChatMessage(isUser: true, text: trimmed)], sending: true);
+    state = state.copyWith(
+      messages: [
+        ...state.messages,
+        AdvisorChatMessage(isUser: true, text: trimmed),
+        const AdvisorChatMessage(isUser: false, text: '', isStreaming: true),
+      ],
+      sending: true,
+    );
     await _persist();
 
     try {
-      final reply = await sendAdvisorMessage(message: trimmed, context: context, history: history);
-      state = state.copyWith(
-        messages: [...state.messages, AdvisorChatMessage(isUser: false, text: reply)],
-        sending: false,
+      final reply = await sendAdvisorMessage(
+        message: trimmed,
+        context: context,
+        history: history,
+        onDelta: (textSoFar) =>
+            _updateLastMessage(AdvisorChatMessage(isUser: false, text: textSoFar, isStreaming: true)),
       );
+      _updateLastMessage(AdvisorChatMessage(isUser: false, text: reply));
+      state = state.copyWith(sending: false);
     } on AdvisorChatException catch (e) {
-      state = state.copyWith(
-        messages: [...state.messages, AdvisorChatMessage(isUser: false, text: e.message, isError: true)],
-        sending: false,
-      );
+      _updateLastMessage(AdvisorChatMessage(isUser: false, text: e.message, isError: true));
+      state = state.copyWith(sending: false);
     } catch (_) {
-      state = state.copyWith(
-        messages: [
-          ...state.messages,
-          const AdvisorChatMessage(isUser: false, text: 'Something went wrong. Try again.', isError: true),
-        ],
-        sending: false,
+      _updateLastMessage(
+        const AdvisorChatMessage(isUser: false, text: 'Something went wrong. Try again.', isError: true),
       );
+      state = state.copyWith(sending: false);
     }
     await _persist();
   }

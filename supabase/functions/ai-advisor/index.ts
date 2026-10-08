@@ -8,6 +8,16 @@
 // AGENTS.md's "THE RULE THAT MATTERS MOST": the LLM never performs
 // arithmetic.
 //
+// Streams the reply back token-by-token (Anthropic's own streaming API,
+// re-emitted as a simple newline-delimited `data: {"delta": "..."}` feed --
+// not Anthropic's raw SSE event shape, so the client never has to track
+// Anthropic's wire format). Before this, the function buffered the ENTIRE
+// reply before responding -- the student saw nothing at all for however
+// long the full generation took, often several seconds. Every
+// auth/rate-limit/validation failure below still happens BEFORE the stream
+// starts and returns a normal single JSON error response; only the actual
+// model reply is streamed.
+//
 // Auth: verify_jwt is enabled at deploy time (platform-level gate), and the
 // Supabase client below is additionally scoped to the caller's own
 // forwarded JWT -- never the service role key -- so RLS on
@@ -46,6 +56,10 @@ Rules you must always follow:
 - You are supportive but never falsely congratulatory -- if CONTEXT shows a falling trend or a demanding/unreachable goal, say so plainly and constructively, the same honest tone the app's own insight cards use.`;
 
 type ChatTurn = { role: "user" | "assistant"; content: string };
+
+function sseLine(payload: unknown): Uint8Array {
+  return new TextEncoder().encode(`data: ${JSON.stringify(payload)}\n\n`);
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -141,6 +155,7 @@ Deno.serve(async (req: Request) => {
         model: ANTHROPIC_MODEL,
         max_tokens: MAX_REPLY_TOKENS,
         system: systemWithContext,
+        stream: true,
         messages: [
           ...history.map((t) => ({ role: t.role, content: t.content })),
           { role: "user", content: message },
@@ -148,20 +163,87 @@ Deno.serve(async (req: Request) => {
       }),
     });
 
-    if (!anthropicRes.ok) {
-      const detail = await anthropicRes.text();
+    if (!anthropicRes.ok || !anthropicRes.body) {
+      const detail = await anthropicRes.text().catch(() => "");
       console.error("Anthropic error", anthropicRes.status, detail);
       return json({ error: "The advisor couldn't respond just now. Try again." }, 502);
     }
 
-    const anthropicJson = await anthropicRes.json();
-    const reply: string = anthropicJson?.content?.[0]?.text ?? "";
+    // Re-parse Anthropic's own SSE stream and re-emit just the text deltas
+    // in our own small, stable shape -- the client (`advisor_chat_service
+    // .dart`) only ever needs to know "here's more text" or "done", never
+    // Anthropic's internal event/block bookkeeping.
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        const reader = anthropicRes.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let sawAnyText = false;
 
-    if (!reply.trim()) {
-      return json({ error: "Didn't get a clear answer back. Try asking again." }, 502);
-    }
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
 
-    return json({ reply: reply.trim() }, 200);
+            const lines = buffer.split("\n");
+            buffer = lines.pop() ?? "";
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed.startsWith("data:")) continue;
+              const payload = trimmed.slice(5).trim();
+              if (!payload || payload === "[DONE]") continue;
+
+              let event: Record<string, unknown>;
+              try {
+                event = JSON.parse(payload);
+              } catch {
+                continue;
+              }
+
+              if (
+                event.type === "content_block_delta" &&
+                (event.delta as Record<string, unknown> | undefined)?.type === "text_delta"
+              ) {
+                const text = (event.delta as Record<string, unknown>).text as string;
+                if (text) {
+                  sawAnyText = true;
+                  controller.enqueue(sseLine({ delta: text }));
+                }
+              } else if (event.type === "error") {
+                console.error("Anthropic stream error event", event);
+                controller.enqueue(sseLine({ error: "The advisor couldn't finish responding. Try again." }));
+              }
+            }
+          }
+        } catch (streamError) {
+          console.error("ai-advisor stream read error", streamError);
+          if (!sawAnyText) {
+            controller.enqueue(sseLine({ error: "The advisor couldn't respond just now. Try again." }));
+          }
+        } finally {
+          if (!sawAnyText) {
+            // Anthropic returned a 200 with a stream that never produced any
+            // text (e.g. immediately hit a content filter) -- the student
+            // must still see something rather than a permanently blank bubble.
+            controller.enqueue(sseLine({ error: "Didn't get a clear answer back. Try asking again." }));
+          }
+          controller.enqueue(sseLine({ done: true }));
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+        ...corsHeaders,
+      },
+    });
   } catch (error) {
     console.error("ai-advisor unexpected error", error);
     return json({ error: "Unexpected error reaching the advisor" }, 500);
