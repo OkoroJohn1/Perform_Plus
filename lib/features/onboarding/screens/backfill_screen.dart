@@ -25,6 +25,7 @@ import '../../../domain/models/backfill_plan.dart';
 import '../../../domain/models/course_result.dart';
 import '../../../domain/models/grading_scheme.dart';
 import '../../../shared/widgets/onboarding_header.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../auth/providers/profile_provider.dart';
 
 const _uuid = Uuid();
@@ -791,7 +792,18 @@ class _BackfillSemesterSheetState
 
     final semester = Semester(
       id: semesterId,
-      profileId: widget.existing?.profileId ?? AppConstants.localProfileId,
+      // Backfill runs post-auth (Act 2: Auth -> Profile -> Backfill), so a
+      // brand-new entry here must carry the signed-in uid, not the
+      // onboarding placeholder -- see the matching fix/comment in
+      // add_semester_sheet.dart for the data-loss bug this caused:
+      // AuthNotifier._stateFor discards anything left under
+      // AppConstants.localProfileId on every later sign-in once this uid
+      // already has real semesters, since that's meant to catch a stray
+      // pre-auth duplicate, not a genuinely new entry. Editing an existing
+      // row keeps its own already-correct profileId unchanged.
+      profileId: widget.existing?.profileId ??
+          ref.read(authStateProvider).valueOrNull?.userId ??
+          AppConstants.localProfileId,
       session: _sessionController.text.trim(),
       term: widget.term,
       level: widget.level,

@@ -34,6 +34,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_palette.dart';
 import '../../../data/repositories/academic_record_provider.dart';
 import '../../../data/repositories/slip_wallet_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../../domain/models/course_result.dart';
 import '../../../domain/models/grading_scheme.dart';
 import '../../../domain/models/slip_upload.dart';
@@ -659,7 +660,19 @@ class _AddSemesterSheetState extends ConsumerState<AddSemesterSheet> {
     ref.read(academicRecordProvider.notifier).addSemester(
           Semester(
             id: semesterId,
-            profileId: AppConstants.localProfileId,
+            // This sheet is only ever reachable post-auth (Academics/Results,
+            // Home) -- never during pre-auth onboarding -- so a new semester
+            // must be tagged with the signed-in uid, not the onboarding
+            // placeholder. Writing the placeholder here was a real,
+            // reported data-loss bug: AuthNotifier._stateFor discards
+            // everything still sitting under AppConstants.localProfileId on
+            // every subsequent sign-in/session-restore once this uid already
+            // has real semesters, on the assumption that anything left there
+            // is a stray pre-auth duplicate -- which silently deleted a
+            // student's most-recently-added semester the next time they
+            // reopened the app. The `?? AppConstants.localProfileId`
+            // fallback only matters if this is somehow reached signed out.
+            profileId: ref.read(authStateProvider).valueOrNull?.userId ?? AppConstants.localProfileId,
             session: _session,
             term: _term,
             level: _level,

@@ -16,12 +16,32 @@ import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:perform_plus/core/constants/app_constants.dart';
 import 'package:perform_plus/data/local/app_database.dart';
 import 'package:perform_plus/data/repositories/repository_providers.dart';
 import 'package:perform_plus/domain/models/course_result.dart';
 import 'package:perform_plus/features/auth/providers/auth_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import 'package:supabase_flutter/supabase_flutter.dart' as gotrue;
+
+/// A real signed-in event, as opposed to [_StreamDrivenAuthNotifier
+/// .seedSignedIn]'s shortcut -- this is what actually drives
+/// `AuthNotifier._stateFor`, the reassign/discard logic under test below.
+/// `User`/`Session` have several required fields with no test-friendly
+/// default, hence the minimal literal values here.
+gotrue.AuthState _signedInEvent(String uid) {
+  final user = User(
+    id: uid,
+    appMetadata: const {},
+    userMetadata: const {},
+    aud: 'authenticated',
+    createdAt: DateTime(2024).toIso8601String(),
+  );
+  return gotrue.AuthState(
+    AuthChangeEvent.signedIn,
+    Session(accessToken: 'test-token', tokenType: 'bearer', user: user),
+  );
+}
 
 class _StreamDrivenAuthNotifier extends AuthNotifier {
   final events = StreamController<gotrue.AuthState>.broadcast();
@@ -42,12 +62,12 @@ class _StreamDrivenAuthNotifier extends AuthNotifier {
   }
 }
 
-Semester _semester(String profileId) => Semester(
-      id: 'sem-1',
+Semester _semester(String profileId, {String id = 'sem-1', int level = 100}) => Semester(
+      id: id,
       profileId: profileId,
       session: '2023/2024',
       term: SemesterTerm.first,
-      level: 100,
+      level: level,
       createdAt: DateTime(2024),
       updatedAt: DateTime(2024),
     );
@@ -158,6 +178,54 @@ void main() {
       final repo = container.read(academicRecordRepositoryProvider);
       expect(await repo.hasSemestersForProfile('deleted-uid'), isFalse);
       expect(await repo.hasSemestersForProfile('new-uid'), isTrue);
+    },
+  );
+
+  test(
+    'a real, newly-added semester tagged with the signed-in uid survives '
+    'the next sign-in/session-restore, while a stray semester left under '
+    'the onboarding placeholder is still correctly discarded',
+    () async {
+      final repo = container.read(academicRecordRepositoryProvider);
+
+      // First sign-in: nothing exists anywhere yet, so AuthNotifier._stateFor
+      // reassigns (a no-op here) rather than discards.
+      notifier.events.add(_signedInEvent('student-uid'));
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(authStateProvider).value?.userId, 'student-uid');
+
+      // The FIXED behaviour: `add_semester_sheet.dart`/`backfill_screen
+      // .dart` now tag a brand-new, post-auth semester with the real uid.
+      await repo.addSemester(_semester('student-uid', id: 'real-new-sem', level: 400));
+
+      // The OLD, BUGGY behaviour, reproduced directly: something still
+      // manages to leave a semester under the onboarding placeholder after
+      // the account is already established -- `_stateFor` must still treat
+      // this one as the stray pre-auth duplicate it's designed to catch.
+      await repo.addSemester(
+        _semester(AppConstants.localProfileId, id: 'stray-placeholder-sem', level: 100),
+      );
+
+      // Simulate the student reopening the app -- a second auth resolution
+      // for the SAME uid, exactly what used to wipe a just-added semester.
+      notifier.events.add(_signedInEvent('student-uid'));
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      final remaining = await repo.loadSemesters();
+      expect(
+        remaining.map((s) => s.id),
+        contains('real-new-sem'),
+        reason: 'a semester correctly tagged with the real uid must never '
+            'be deleted just because this uid already has other data',
+      );
+      expect(
+        remaining.map((s) => s.id),
+        isNot(contains('stray-placeholder-sem')),
+        reason: 'a semester still left under the onboarding placeholder is '
+            'a genuine stray duplicate and must still be discarded',
+      );
     },
   );
 }

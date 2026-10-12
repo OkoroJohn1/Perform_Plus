@@ -316,6 +316,23 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   ///      already exist under their real account. Blindly reassigning would
   ///      silently duplicate every semester instead of just dropping the
   ///      stray re-entry.
+  ///
+  ///      ⚠ This discard runs on EVERY auth resolution for an already-
+  ///      established account, including a plain app restart -- it was
+  ///      previously also silently deleting genuinely new, post-auth
+  ///      semesters, because `add_semester_sheet.dart`/`backfill_screen
+  ///      .dart` hardcoded `AppConstants.localProfileId` for every new
+  ///      semester regardless of whether the student was already signed in.
+  ///      A student who added a semester through either screen would see it
+  ///      vanish the next time the app restarted/resolved auth again, since
+  ///      this code correctly saw real data under their real uid and
+  ///      assumed anything left under the placeholder must be the stray
+  ///      pre-auth duplicate described above -- a real, reported data-loss
+  ///      bug. Fixed at the source: both screens now tag a new semester
+  ///      with the signed-in uid. If you add another path that creates a
+  ///      `Semester` post-auth, it MUST do the same -- `AppConstants
+  ///      .localProfileId` is only ever correct for data entered before an
+  ///      account exists.
   Future<AuthState> _stateFor(User user) async {
     if (user.email != null) {
       unawaited(_rememberAccountEmail(user.email!));

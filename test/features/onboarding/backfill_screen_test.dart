@@ -7,12 +7,23 @@ import 'package:go_router/go_router.dart';
 import 'package:perform_plus/core/router/routes.dart';
 import 'package:perform_plus/data/local/app_database.dart';
 import 'package:perform_plus/data/repositories/academic_record_provider.dart';
+import 'package:perform_plus/data/repositories/drift_academic_record_repository.dart';
 import 'package:perform_plus/data/repositories/drift_profile_repository.dart';
 import 'package:perform_plus/data/repositories/repository_providers.dart';
 import 'package:perform_plus/data/seed/nigerian_institutions.dart';
 import 'package:perform_plus/domain/models/course_result.dart';
 import 'package:perform_plus/domain/models/student_profile.dart';
+import 'package:perform_plus/features/auth/providers/auth_provider.dart';
 import 'package:perform_plus/features/onboarding/screens/backfill_screen.dart';
+
+/// Resolves straight to a signed-in uid, bypassing `_stateFor`'s Drift/
+/// session plumbing entirely -- this test only needs an authenticated uid
+/// to exist in [authStateProvider], not to exercise how it got there.
+class _FakeSignedInAuthNotifier extends AuthNotifier {
+  @override
+  Future<AuthState> build() async =>
+      const AuthState(userId: 'student-uid', email: 'student@example.com');
+}
 
 final _now = DateTime(2026, 1, 1);
 
@@ -155,5 +166,75 @@ void main() {
 
     expect(find.text('GOAL SETTING SCREEN'), findsOneWidget);
     expect(find.byType(BackfillScreen), findsNothing);
+  });
+
+  testWidgets(
+      'saving a new semester here tags it with the signed-in uid, not the '
+      'onboarding placeholder', (tester) async {
+    // A real, data-loss bug: this screen used to hardcode
+    // `AppConstants.localProfileId` on every new semester regardless of
+    // whether the student was already signed in. AuthNotifier._stateFor
+    // then deleted anything still sitting under that placeholder on the
+    // student's very next sign-in/session-restore, since by then their
+    // real uid already had other semesters and the placeholder's contents
+    // looked like a stray pre-auth duplicate -- wiping the semester this
+    // screen had just saved.
+    final db = await _seededDb(_profile); // 300L, nothing backfilled yet.
+
+    // A real `ProviderContainer`, awaited BEFORE the first pump -- matching
+    // what the real app's router redirect guarantees (it never lets a
+    // non-preauth route render until `authStateProvider.hasValue`; see
+    // app_router.dart). Pumping straight into `ProviderScope(overrides:
+    // ...)` instead leaves `authStateProvider` in its initial microtask of
+    // `AsyncLoading`, which would make `_save()`'s `.valueOrNull` null for
+    // a reason this test has no business asserting on.
+    final container = ProviderContainer(
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        authStateProvider.overrideWith(_FakeSignedInAuthNotifier.new),
+      ],
+    );
+    addTearDown(container.dispose);
+    await container.read(authStateProvider.future);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: BackfillScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Open whichever slot is first offered -- this test only cares about
+    // the resulting semester's profileId, not which level/term it lands on.
+    final missingSlot = find.byKey(const ValueKey('missing')).first;
+    await tester.ensureVisible(missingSlot);
+    await tester.pumpAndSettle();
+    await tester.tap(missingSlot);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField), 'CSC101');
+    await tester.tap(find.byType(DropdownButtonFormField<int>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('3').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('A').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Save semester'));
+    await tester.pumpAndSettle();
+
+    final repo =
+        DriftAcademicRecordRepository(db.semesterDao, db.courseResultDao);
+    final saved = await repo.loadSemesters();
+    expect(saved, hasLength(1));
+    expect(
+      saved.single.profileId,
+      'student-uid',
+      reason: 'a semester added while signed in must be tagged with the '
+          'real uid, never AppConstants.localProfileId',
+    );
   });
 }
