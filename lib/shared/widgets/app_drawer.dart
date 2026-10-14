@@ -1,9 +1,9 @@
 /// The hamburger-menu drawer shared by every tab shell (Dashboard,
-/// Academics, Advisor, Study — Me has its own settings inline instead, see
-/// `me_shell.dart`, but stays reachable from here too). One implementation
-/// rather than a near-identical private copy per screen, so adding
-/// something here (Theme colour/Appearance quick-access, below) reaches
-/// every tab at once instead of needing five separate edits.
+/// Academics, Advisor, Study, Feedback — Me has its own settings inline
+/// instead, see `me_shell.dart`, but stays reachable from here too). One
+/// implementation rather than a near-identical private copy per screen, so
+/// adding something here (Theme colour/Appearance quick-access, below)
+/// reaches every tab at once instead of needing per-screen edits.
 ///
 /// Theme colour and Appearance are also full rows inside the Me tab's App
 /// section — deliberately duplicated for reachability, not moved: a
@@ -71,6 +71,11 @@ class AppDrawer extends ConsumerWidget {
               leading: const Icon(Icons.menu_book_outlined),
               title: const Text('Study'),
               onTap: () => go(Routes.study),
+            ),
+            ListTile(
+              leading: const Icon(Icons.feedback_outlined),
+              title: const Text('Feedback'),
+              onTap: () => go(Routes.feedback),
             ),
             ListTile(
               leading: const Icon(Icons.person_outline),

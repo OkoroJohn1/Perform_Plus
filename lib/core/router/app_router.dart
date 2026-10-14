@@ -17,6 +17,7 @@ import '../../features/ai/screens/ai_shell.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/sign_in_screen.dart';
 import '../../features/auth/screens/profile_setup_screen.dart';
+import '../../features/feedback/screens/feedback_screen.dart';
 import '../../features/home/screens/dashboard_screen.dart';
 import '../../features/home/screens/notifications_panel.dart';
 import '../../features/me/screens/me_shell.dart';
@@ -146,9 +147,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // ---- Act 3: the tab shell ------------------------------------------
-      // Five tabs, each owning several screens via internal segmented
+      // Six tabs, each owning several screens via internal segmented
       // controls. Academics answers "where do I stand", Study answers
-      // "what do I do about it".
+      // "what do I do about it", Feedback is the shared, cross-student
+      // feed (see FeedbackScreen's doc comment).
       ShellRoute(
         navigatorKey: _shellKey,
         builder: (_, __, child) => AppScaffold(child: child),
@@ -168,6 +170,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: Routes.study,
             builder: (_, __) => const StudyShell(),
+          ),
+          GoRoute(
+            path: Routes.feedback,
+            builder: (_, __) => const FeedbackScreen(),
           ),
           GoRoute(
             path: Routes.me,

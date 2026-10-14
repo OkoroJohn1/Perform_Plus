@@ -28,64 +28,55 @@ void main() {
   // isolation, not the accidental-duplicate case this heuristic warns about.
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
 
-  testWidgets('search filters the list by abbreviation', (tester) async {
-    await tester.pumpWidget(_app());
-
-    await tester.enterText(find.byType(TextField), 'unn');
-    await tester.pump();
-
-    expect(find.text('University of Nigeria, Nsukka'), findsOneWidget);
-    expect(
-      find.text('Federal University of Technology, Owerri'),
-      findsNothing,
-    );
-    // The pinned "Other" row survives every filter.
-    expect(find.text('Other (Add Manually)'), findsOneWidget);
-  });
-
-  testWidgets('Continue is disabled until an institution is selected',
+  testWidgets('FUTO is shown centered with no other institution offered',
       (tester) async {
     await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
 
-    expect(_continueButton(tester).onTap, isNull);
+    expect(
+      find.text('Federal University of Technology, Owerri'),
+      findsOneWidget,
+    );
+    expect(find.text('FUTO'), findsOneWidget);
+    // Single-institution mode: no search field, no other school, no
+    // manual-entry escape hatch.
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('University of Nigeria, Nsukka'), findsNothing);
+    expect(find.text('Other (Add Manually)'), findsNothing);
+  });
 
-    await tester.tap(find.text('Federal University of Technology, Owerri'));
+  testWidgets('Continue is enabled immediately -- FUTO is auto-selected',
+      (tester) async {
+    await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
 
     expect(_continueButton(tester).onTap, isNotNull);
   });
 
-  testWidgets('selecting an unverified scheme surfaces the warning',
+  testWidgets(
+      'auto-selecting FUTO persists its verified scheme as the active one',
       (tester) async {
-    // The default 800x600 test surface is short enough that, with the
-    // footer's added "Already have an account?" link claiming more fixed
-    // height, the second search result can sit outside the list sliver's
-    // near-viewport build range. A taller surface sidesteps that instead
-    // of fighting scroll precision in the test (same pattern used for the
-    // Me tab's grading-scheme sheet, another screen taller than the
-    // default viewport).
-    tester.view.physicalSize = const Size(800, 1400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    await tester.pumpWidget(_app());
-
-    // FUTO's scheme is the one verified entry — no warning expected for it.
-    await tester.tap(find.text('Federal University of Technology, Owerri'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining("haven't confirmed"), findsNothing);
-
-    // UNN's is a seeded default, not registry-confirmed — must warn.
-    await tester.tap(find.text('University of Nigeria, Nsukka'));
-    await tester.pumpAndSettle();
-
-    expect(
-      find.text(
-        "We haven't confirmed UNN's exact grading rules yet. Check the "
-        'defaults before you rely on your CGPA.',
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [appDatabaseProvider.overrideWithValue(db)],
+        child: const MaterialApp(home: InstitutionSetupScreen()),
       ),
+    );
+    await tester.pumpAndSettle();
+
+    // FUTO's scheme is the one verified entry -- no warning banner.
+    expect(find.textContaining("haven't confirmed"), findsNothing);
+    expect(
+      find.text('Use default scheme for Federal University of Technology, Owerri'),
       findsOneWidget,
     );
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(InstitutionSetupScreen)),
+    );
+    final scheme = await container.read(gradingSchemeRepositoryProvider).loadActiveScheme();
+    expect(scheme?.institutionId, 'futo');
+    expect(scheme?.isVerified, isTrue);
   });
 }

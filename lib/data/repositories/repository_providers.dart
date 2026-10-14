@@ -17,6 +17,7 @@ import '../../core/notifications/local_notification_service.dart';
 import '../../domain/repositories/academic_record_repository.dart';
 import '../../domain/repositories/achievement_repository.dart';
 import '../../domain/repositories/calendar_repository.dart';
+import '../../domain/repositories/feedback_repository.dart';
 import '../../domain/repositories/goal_repository.dart';
 import '../../domain/repositories/grading_scheme_repository.dart';
 import '../../domain/repositories/note_repository.dart';
@@ -37,6 +38,7 @@ import 'note_remote_sync.dart';
 import 'profile_photo_remote_sync.dart';
 import 'profile_remote_sync.dart';
 import 'security_questions_remote_sync.dart';
+import 'supabase_feedback_repository.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -131,6 +133,19 @@ final profilePhotoRemoteSyncProvider = Provider<ProfilePhotoRemoteSync?>((ref) {
 final securityQuestionsRemoteSyncProvider = Provider<SecurityQuestionsRemoteSync?>((ref) {
   try {
     return SupabaseSecurityQuestionsRemoteSync(Supabase.instance.client);
+  } catch (_) {
+    return null;
+  }
+});
+
+/// `null` when Supabase was never initialized -- same guard as the
+/// providers above. Unlike them, this one has no Drift-backed counterpart
+/// at all: the feedback feed is inherently shared/online-only (see
+/// `SupabaseFeedbackRepository`'s doc comment), so there is nothing for a
+/// local fallback to even mean.
+final feedbackRepositoryProvider = Provider<FeedbackRepository?>((ref) {
+  try {
+    return SupabaseFeedbackRepository(Supabase.instance.client);
   } catch (_) {
     return null;
   }

@@ -1,7 +1,7 @@
 /// Route paths, grouped by act.
 ///
 /// V1 flow: Splash -> Institution -> Add results -> GPA reveal -> Sign in ->
-/// Profile -> Backfill -> Goal setting -> the five tabs. Value (the GPA
+/// Profile -> Backfill -> Goal setting -> the six tabs. Value (the GPA
 /// reveal) still arrives before the signup gate — see AGENTS.md's "UX
 /// architecture" section for the rationale. The institution picker is back
 /// (see AGENTS.md's "Open questions") as the first Act 1 step, ahead of
@@ -21,11 +21,12 @@ class Routes {
   static const backfill = '/onboarding/backfill';
   static const goalSetting = '/onboarding/goal';
 
-  // Act 3 — the five tabs.
+  // Act 3 — the six tabs.
   static const home = '/home';
   static const academics = '/academics';
   static const ai = '/ai';
   static const study = '/study';
+  static const feedback = '/feedback';
   static const me = '/me';
 
   /// Pushed from the header bell on Home/Academics/AI/Study — not a tab
@@ -46,9 +47,9 @@ class Routes {
   static bool isPreAuth(String location) =>
       _preAuth.contains(location) || location.startsWith('/onboarding/');
 
-  static const tabOrder = <String>[home, academics, ai, study, me];
+  static const tabOrder = <String>[home, academics, ai, study, feedback, me];
 
-  /// -1 for a route that isn't one of the five tabs (e.g. [notifications])
+  /// -1 for a route that isn't one of the six tabs (e.g. [notifications])
   /// — callers that need a tab highlighted regardless (the bottom nav)
   /// decide their own fallback rather than this silently defaulting to
   /// Home, which would be wrong for a route pushed from a different tab.

@@ -1,4 +1,4 @@
-/// Institution & scheme setup — step 1 of Act 1, restored.
+/// Institution & scheme setup — step 1 of Act 1.
 ///
 /// Resolves the grading scheme (see AGENTS.md's "four separable concerns")
 /// before any result is entered, so `AddFirstResultsScreen`'s grade dropdown
@@ -9,7 +9,18 @@
 /// / `OnboardingLightPalette`. Do not copy this screen's `Theme` override
 /// elsewhere without the same design sign-off.
 ///
-/// Selecting an institution here does two independent things: it updates
+/// **Single-institution mode**: Perform+ is scoped to FUTO only — this
+/// screen no longer offers a search/picker over `nigerianInstitutions`, it
+/// auto-selects FUTO on entry and shows it centered with a bank icon
+/// (`Icons.account_balance`) rather than `LettermarkAvatar`'s real logo
+/// asset. `data/seed/nigerian_institutions.dart`'s other fifteen entries are
+/// deliberately NOT deleted from that file — they stay fully defined there
+/// (and in `defaultSchemes`) in case multi-institution support is restored
+/// later; this screen simply never surfaces them. The "Other (Add
+/// Manually)" custom-institution flow was removed for the same reason: it
+/// contradicts a single-institution product.
+///
+/// Auto-selecting FUTO here does two independent things: it updates
 /// `onboardingDraftProvider` (the session-only draft the rest of Act 1
 /// reads) AND writes straight through `gradingSchemeRepositoryProvider` to
 /// Drift, so the choice survives an app restart even though the draft
@@ -30,26 +41,6 @@ import '../../../data/seed/nigerian_institutions.dart';
 import '../../../domain/models/grading_scheme.dart';
 import '../../../shared/widgets/onboarding_header.dart';
 import '../providers/onboarding_provider.dart';
-import '../widgets/lettermark_avatar.dart';
-
-const _rowHeight = 74.0;
-const _dividerIndent = 78.0;
-
-/// Diacritic folding for search — none of the sixteen seeded names actually
-/// carry one, but a custom "Other" entry might, and the spec calls for
-/// diacritic-insensitive matching regardless.
-const _diacritics = 'àáâãäåèéêëìíîïòóôõöùúûüñçÀÁÂÃÄÅÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÑÇ';
-const _asciiFold = 'aaaaaaeeeeiiiiooooouuuuncAAAAAAEEEEIIIIOOOOOUUUUNC';
-
-String _normalizeForSearch(String input) {
-  final buffer = StringBuffer();
-  for (final rune in input.runes) {
-    final ch = String.fromCharCode(rune);
-    final idx = _diacritics.indexOf(ch);
-    buffer.write(idx == -1 ? ch : _asciiFold[idx]);
-  }
-  return buffer.toString().toLowerCase();
-}
 
 class InstitutionSetupScreen extends ConsumerStatefulWidget {
   const InstitutionSetupScreen({super.key});
@@ -61,54 +52,34 @@ class InstitutionSetupScreen extends ConsumerStatefulWidget {
 
 class _InstitutionSetupScreenState
     extends ConsumerState<InstitutionSetupScreen> {
-  final _searchController = TextEditingController();
-  final _searchFocusNode = FocusNode();
+  static final Institution _futo =
+      nigerianInstitutions.firstWhere((i) => i.id == 'futo');
 
-  String _query = '';
-  bool _searchFocused = false;
   String? _selectedInstitutionId;
-  String? _customInstitutionName;
-  bool _madeSelectionThisSession = false;
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(() {
-      setState(() => _query = _searchController.text);
+    // Only one institution is ever offered, so it's selected immediately
+    // rather than waiting on a tap that has nothing else to choose between.
+    // The provider writes in `_persistSelection` can't run synchronously
+    // here -- Riverpod forbids modifying a provider mid-build, which
+    // `initState` still counts as -- so they're deferred one frame.
+    _selectedInstitutionId = _futo.id;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _persistSelection(_futo.id);
     });
-    _searchFocusNode.addListener(() {
-      setState(() => _searchFocused = _searchFocusNode.hasFocus);
-    });
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _searchFocusNode.dispose();
-    super.dispose();
-  }
-
-  List<Institution> get _filtered {
-    final q = _normalizeForSearch(_query.trim());
-    if (q.isEmpty) return nigerianInstitutions;
-    return nigerianInstitutions
-        .where((i) =>
-            _normalizeForSearch(i.name).contains(q) ||
-            _normalizeForSearch(i.abbreviation).contains(q))
-        .toList();
   }
 
   String? get _selectedName {
     final id = _selectedInstitutionId;
     if (id == null) return null;
-    if (id == 'custom') return _customInstitutionName;
     return nigerianInstitutions.firstWhere((i) => i.id == id).name;
   }
 
   String? get _selectedAbbreviation {
     final id = _selectedInstitutionId;
     if (id == null) return null;
-    if (id == 'custom') return 'CUSTOM';
     return nigerianInstitutions.firstWhere((i) => i.id == id).abbreviation;
   }
 
@@ -116,23 +87,6 @@ class _InstitutionSetupScreenState
     final id = _selectedInstitutionId;
     if (id == null) return null;
     return defaultSchemes[id] ?? fallbackScheme;
-  }
-
-  void _selectInstitution(Institution institution) {
-    setState(() {
-      _selectedInstitutionId = institution.id;
-      _madeSelectionThisSession = true;
-    });
-    _persistSelection(institution.id);
-  }
-
-  void _selectCustom(String name) {
-    setState(() {
-      _selectedInstitutionId = 'custom';
-      _customInstitutionName = name;
-      _madeSelectionThisSession = true;
-    });
-    _persistSelection('custom');
   }
 
   void _persistSelection(String institutionId) {
@@ -143,53 +97,11 @@ class _InstitutionSetupScreenState
     );
   }
 
-  Future<void> _handleBack() async {
-    if (_madeSelectionThisSession) {
-      final discard = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Discard your selection?'),
-          content: const Text(
-            "You chose an institution but haven't continued yet. Leaving "
-            'now discards it.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Discard'),
-            ),
-          ],
-        ),
-      );
-      if (discard != true) return;
-    }
-    if (!mounted) return;
+  void _handleBack() {
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     } else {
       SystemNavigator.pop();
-    }
-  }
-
-  Future<void> _openCustomSheet({String? initialName}) async {
-    final name = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: OnboardingLightPalette.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) => Theme(
-        data: AppTheme.onboardingLight,
-        child: _CustomInstitutionSheet(initialName: initialName ?? ''),
-      ),
-    );
-    if (name != null && name.trim().isNotEmpty) {
-      _selectCustom(name.trim());
     }
   }
 
@@ -225,76 +137,62 @@ class _InstitutionSetupScreenState
               backgroundColor: colorScheme.surface,
               resizeToAvoidBottomInset: true,
               body: SafeArea(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return Column(
-                      children: [
-                        OnboardingHeader(
-                          stepNumber: OnboardingStep.institution.stepNumber,
-                          totalSteps: OnboardingStep.totalSteps,
-                          title: OnboardingStep.institution.title,
-                          onBack: _handleBack,
+                child: Column(
+                  children: [
+                    OnboardingHeader(
+                      stepNumber: OnboardingStep.institution.stepNumber,
+                      totalSteps: OnboardingStep.totalSteps,
+                      title: OnboardingStep.institution.title,
+                      onBack: _handleBack,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 28, 20, 8),
+                      child: Text(
+                        'Your University',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
                         ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 28, 20, 8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Select Your University',
-                                style: TextStyle(
-                                  color: colorScheme.onSurface,
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              _SearchField(
-                                controller: _searchController,
-                                focusNode: _searchFocusNode,
-                                focused: _searchFocused,
-                                onClear: () => _searchController.clear(),
-                              ),
-                            ],
+                      ),
+                    ),
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => SingleChildScrollView(
+                          child: ConstrainedBox(
+                            constraints:
+                                BoxConstraints(minHeight: constraints.maxHeight),
+                            child: const Center(child: _FutoHero()),
                           ),
                         ),
-                        Expanded(
-                          child: _InstitutionList(
-                            institutions: _filtered,
-                            query: _query,
-                            selectedId: _selectedInstitutionId,
-                            onSelect: _selectInstitution,
-                            onOtherTap: () =>
-                                _openCustomSheet(initialName: _query.trim()),
-                          ),
-                        ),
-                        _Footer(
-                          visible: canContinue,
-                          scheme: scheme,
-                          selectedName: selectedName,
-                          onChangeScheme: scheme == null || selectedName == null
-                              ? null
-                              : () => _openSchemeSheet(
-                                    scheme,
-                                    _selectedAbbreviation ?? selectedName,
-                                  ),
-                          onReviewScheme: scheme == null || selectedName == null
-                              ? null
-                              : () => _openSchemeSheet(
-                                    scheme,
-                                    _selectedAbbreviation ?? selectedName,
-                                  ),
-                          unverifiedAbbreviation:
-                              (scheme != null && !scheme.isVerified)
-                                  ? (_selectedAbbreviation ?? selectedName!)
-                                  : null,
-                          canContinue: canContinue,
-                          onContinue: () => context.go(Routes.addFirstResults),
-                        ),
-                      ],
-                    );
-                  },
+                      ),
+                    ),
+                    _Footer(
+                      visible: canContinue,
+                      scheme: scheme,
+                      selectedName: selectedName,
+                      onChangeScheme: scheme == null || selectedName == null
+                          ? null
+                          : () => _openSchemeSheet(
+                                scheme,
+                                _selectedAbbreviation ?? selectedName,
+                              ),
+                      onReviewScheme: scheme == null || selectedName == null
+                          ? null
+                          : () => _openSchemeSheet(
+                                scheme,
+                                _selectedAbbreviation ?? selectedName,
+                              ),
+                      unverifiedAbbreviation:
+                          (scheme != null && !scheme.isVerified)
+                              ? (_selectedAbbreviation ?? selectedName!)
+                              : null,
+                      canContinue: canContinue,
+                      onContinue: () => context.go(Routes.addFirstResults),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -305,358 +203,59 @@ class _InstitutionSetupScreenState
   }
 }
 
-class _SearchField extends StatelessWidget {
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final bool focused;
-  final VoidCallback onClear;
-
-  const _SearchField({
-    required this.controller,
-    required this.focusNode,
-    required this.focused,
-    required this.onClear,
-  });
+/// Perform+'s single supported institution, centered and shown with a
+/// generic bank icon rather than `LettermarkAvatar`'s real logo asset —
+/// this screen's whole point is "there is only one option here," so it
+/// reads as an institutional/official mark rather than a specific brand.
+class _FutoHero extends StatelessWidget {
+  const _FutoHero();
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
-      height: 56,
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color:
-              focused ? colorScheme.primary : OnboardingLightPalette.searchBorder,
-          width: focused ? 1.8 : 1.2,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 120,
+          height: 120,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: colorScheme.primary.withValues(alpha: 0.1),
+          ),
+          child: Icon(
+            Icons.account_balance,
+            size: 60,
+            color: colorScheme.primary,
+          ),
         ),
-        boxShadow: focused
-            ? [
-                BoxShadow(
-                  color: colorScheme.primary.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  spreadRadius: 4,
-                ),
-              ]
-            : null,
-      ),
-      child: Row(
-        children: [
-          const SizedBox(width: 18),
-          const Icon(Icons.search,
-              size: 22, color: OnboardingLightPalette.hintText),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              focusNode: focusNode,
-              style: TextStyle(color: colorScheme.onSurface, fontSize: 16),
-              decoration: const InputDecoration(
-                hintText: 'Search university…',
-                hintStyle: TextStyle(
-                  color: OnboardingLightPalette.hintText,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                ),
-                border: InputBorder.none,
-                isDense: true,
-              ),
+        const SizedBox(height: 24),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Text(
+            'Federal University of Technology, Owerri',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colorScheme.onSurface,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              height: 1.3,
             ),
           ),
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: controller,
-            builder: (context, value, _) {
-              if (value.text.isEmpty) return const SizedBox(width: 12);
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: IconButton(
-                    padding: EdgeInsets.zero,
-                    icon: const Icon(
-                      Icons.close,
-                      size: 20,
-                      color: OnboardingLightPalette.hintText,
-                    ),
-                    onPressed: onClear,
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Scrollable institution list — the only part of the screen that scrolls.
-/// "Other (Add Manually)" is always the last item, even when [institutions]
-/// (already filtered by the parent) is empty.
-class _InstitutionList extends StatelessWidget {
-  final List<Institution> institutions;
-  final String query;
-  final String? selectedId;
-  final ValueChanged<Institution> onSelect;
-  final VoidCallback onOtherTap;
-
-  const _InstitutionList({
-    required this.institutions,
-    required this.query,
-    required this.selectedId,
-    required this.onSelect,
-    required this.onOtherTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isEmpty = institutions.isEmpty;
-    final itemCount = (isEmpty ? 1 : institutions.length) + 1;
-
-    return ListView.separated(
-      padding: EdgeInsets.zero,
-      itemCount: itemCount,
-      separatorBuilder: (context, i) {
-        if (isEmpty && i == 0) return const SizedBox.shrink();
-        return const Divider(
-          height: 1,
-          thickness: 1,
-          indent: _dividerIndent,
-          color: OnboardingLightPalette.divider,
-        );
-      },
-      itemBuilder: (context, i) {
-        if (isEmpty) {
-          if (i == 0) {
-            return _EmptyResults(
-                query: query.trim(), onAddManually: onOtherTap);
-          }
-          return _OtherRow(selected: selectedId == 'custom', onTap: onOtherTap);
-        }
-        if (i == institutions.length) {
-          return _OtherRow(selected: selectedId == 'custom', onTap: onOtherTap);
-        }
-        final institution = institutions[i];
-        return _InstitutionRow(
-          institution: institution,
-          selected: selectedId == institution.id,
-          onTap: () => onSelect(institution),
-        );
-      },
-    );
-  }
-}
-
-class _InstitutionRow extends StatelessWidget {
-  final Institution institution;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _InstitutionRow({
-    required this.institution,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final color =
-        OnboardingLightPalette.avatarPalette[institution.avatarColorIndex % 8];
-
-    return SizedBox(
-      height: _rowHeight,
-      child: Stack(
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            margin: EdgeInsets.symmetric(horizontal: selected ? 12 : 0),
-            decoration: BoxDecoration(
-              color: selected
-                  ? colorScheme.primary.withValues(alpha: 0.06)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onTap,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    LettermarkAvatar(
-                      abbreviation: institution.abbreviation,
-                      color: color,
-                      logoAsset: institution.logoAsset,
-                    ),
-                    const SizedBox(width: 18),
-                    Expanded(
-                      child: AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 180),
-                        style: TextStyle(
-                          color: colorScheme.onSurface,
-                          fontSize: 16.5,
-                          fontWeight:
-                              selected ? FontWeight.w600 : FontWeight.w500,
-                        ),
-                        child: Text(
-                          institution.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    SizedBox(
-                      width: 22,
-                      child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 180),
-                        opacity: selected ? 1 : 0,
-                        child: Icon(
-                          Icons.check_circle,
-                          size: 22,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OtherRow extends StatelessWidget {
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _OtherRow({required this.selected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return SizedBox(
-      height: _rowHeight,
-      child: Stack(
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            margin: EdgeInsets.symmetric(horizontal: selected ? 12 : 0),
-            decoration: BoxDecoration(
-              color: selected
-                  ? colorScheme.primary.withValues(alpha: 0.06)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onTap,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: colorScheme.primary.withValues(alpha: 0.1),
-                      ),
-                      child:
-                          Icon(Icons.add, size: 22, color: colorScheme.primary),
-                    ),
-                    const SizedBox(width: 18),
-                    Expanded(
-                      child: Text(
-                        'Other (Add Manually)',
-                        style: TextStyle(
-                          color: colorScheme.primary,
-                          fontSize: 16.5,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    SizedBox(
-                      width: 22,
-                      child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 180),
-                        opacity: selected ? 1 : 0,
-                        child: Icon(
-                          Icons.check_circle,
-                          size: 22,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyResults extends StatelessWidget {
-  final String query;
-  final VoidCallback onAddManually;
-
-  const _EmptyResults({required this.query, required this.onAddManually});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return SizedBox(
-      height: 220,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.search_off,
-              size: 40,
-              color: OnboardingLightPalette.emptyIcon,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              "No match for '$query'",
-              style: const TextStyle(
-                color: OnboardingLightPalette.secondaryText,
-                fontSize: 15,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: onAddManually,
-              child: Text(
-                'Add it manually',
-                style: TextStyle(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
         ),
-      ),
+        const SizedBox(height: 8),
+        const Text(
+          'FUTO',
+          style: TextStyle(
+            color: OnboardingLightPalette.secondaryText,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.4,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -938,103 +537,6 @@ class _ContinueButtonState extends State<_ContinueButton> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Bottom sheet for the "Other (Add Manually)" row: a name plus a starting
-/// scheme. Building a full custom scheme editor (letter/point mapping,
-/// classification bands) is out of scope here — the student starts on
-/// [fallbackScheme] (the standard 5.0 scale) and can fine-tune later from
-/// the Grading Scheme section's "Change" action.
-class _CustomInstitutionSheet extends StatefulWidget {
-  final String initialName;
-
-  const _CustomInstitutionSheet({required this.initialName});
-
-  @override
-  State<_CustomInstitutionSheet> createState() =>
-      _CustomInstitutionSheetState();
-}
-
-class _CustomInstitutionSheetState extends State<_CustomInstitutionSheet> {
-  late final _controller = TextEditingController(text: widget.initialName);
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final viewInsets = MediaQuery.of(context).viewInsets;
-
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: 20 + viewInsets.bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Add your institution',
-            style: TextStyle(
-              color: colorScheme.onSurface,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "We'll start you on the standard 5.0 scale — fine-tune it any "
-            "time from the Grading Scheme section's Change action.",
-            style: TextStyle(
-              color: OnboardingLightPalette.secondaryText,
-              fontSize: 14,
-              height: 1.3,
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _controller,
-            autofocus: true,
-            style: TextStyle(color: colorScheme.onSurface),
-            decoration: InputDecoration(
-              hintText: 'Institution name',
-              hintStyle: const TextStyle(color: OnboardingLightPalette.hintText),
-              filled: true,
-              fillColor: colorScheme.surface,
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide:
-                    const BorderSide(color: OnboardingLightPalette.searchBorder),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: colorScheme.primary, width: 1.8),
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            onSubmitted: (value) => Navigator.of(context).pop(value),
-          ),
-          const SizedBox(height: 20),
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: _controller,
-            builder: (context, value, _) => _ContinueButton(
-              enabled: value.text.trim().isNotEmpty,
-              onPressed: () => Navigator.of(context).pop(_controller.text),
-            ),
-          ),
-        ],
       ),
     );
   }

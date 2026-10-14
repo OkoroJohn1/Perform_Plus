@@ -1,4 +1,4 @@
-/// The five-tab shell.
+/// The six-tab shell.
 ///
 /// Your original board had 14 sibling destinations hanging off the
 /// dashboard with a 5-item bottom bar — Roadmap, Reading, Exams, Reports,
@@ -8,6 +8,7 @@
 ///
 ///   Academics -> "where do I stand"
 ///   Study     -> "what do I do about it"
+///   Feedback  -> the shared, cross-student feed (see FeedbackScreen)
 ///
 /// Notifications live as a bell in each tab's header, not a tab — pushed as
 /// `Routes.notifications`, nested under this same shell so the bottom nav
@@ -66,7 +67,10 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
     final index = matched >= 0 ? matched : _lastTabIndex;
     final currentTab = Routes.tabOrder[index];
     final onNotifications = location.startsWith(Routes.notifications);
-    final autoShow = currentTab != Routes.ai && currentTab != Routes.me && !onNotifications;
+    final autoShow = currentTab != Routes.ai &&
+        currentTab != Routes.me &&
+        currentTab != Routes.feedback &&
+        !onNotifications;
 
     final scaffold = Scaffold(
       // Every tab now paints its own full-bleed light `#F7F7FB` surface --
